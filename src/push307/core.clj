@@ -73,10 +73,11 @@
   )
 
 (defn get-args-from-stacks
-  "Takes a state and a list of stacks to take args from. If there are enough args
-  on each of the desired stacks, returns a map of the form {:state :args}, where
-  :state is the new state with args popped, and :args is a list of args from
-  the stacks. If there aren't enough args on the stacks, returns :not-enough-args."
+  "Takes a state and a list of stacks to take args from. If there are enough
+  args on each of the desired stacks, returns a map of the form {:state :args},
+  where :state is the new state with args popped, and :args is a list of args
+  from the stacks. If there aren't enough args on the stacks, returns
+  :not-enough-args."
   [state stacks]
   (loop [state state
          stacks stacks
@@ -92,9 +93,9 @@
 
 (defn make-push-instruction
   "A utility function for making Push instructions. Takes a state, the function
-  to apply to the args, the stacks to take the args from, and the stack to return
-  the result to. Applies the function to the args (taken from the stacks) and pushes
-  the return value onto return-stack in the resulting state."
+  to apply to the args, the stacks to take the args from, and the stack to
+  return the result to. Applies the function to the args (taken from the stacks)
+  and pushes the return value onto return-stack in the resulting state."
   [state function arg-stacks return-stack]
   (let [args-pop-result (get-args-from-stacks state arg-stacks)]
     (if (= args-pop-result :not-enough-args)
@@ -134,7 +135,8 @@
 
 (defn integer_-
   "Subtracts the top two integers and leaves result on the integer stack.
-  Note: the second integer on the stack should be subtracted from the top integer."
+  Note: the second integer on the stack should be subtracted from the top
+  integer."
   [state]
   :STUB
   )
@@ -208,7 +210,8 @@
   )
 
 (defn uniform-deletion
-  "Randomly deletes instructions from program at some rate. Returns child program."
+  "Randomly deletes instructions from program at some rate. Returns child
+  program."
   [prog]
   :STUB
   )
@@ -230,7 +233,11 @@
 -------------------------------------------------------
                Report for Generation 3
 -------------------------------------------------------
-Best program: (in1 integer_% integer_* integer_- 0 1 in1 1 integer_* 0 integer_* 1 in1 integer_* integer_- in1 integer_% integer_% 0 integer_+ in1 integer_* integer_- in1 in1 integer_* integer_+ integer_* in1 integer_- integer_* 1 integer_%)
+Best program:
+  (in1 integer_% integer_* integer_- 0 1 in1 1 integer_* 0 integer_* 1 in1
+  integer_* integer_- in1 integer_% integer_% 0 integer_+ in1 integer_*
+  integer_- in1 in1 integer_* integer_+ integer_* in1 integer_- integer_* 1
+  integer_%)
 Best program size: 33
 Best total error: 727
 Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
@@ -254,7 +261,11 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
    - error-function
    - instructions (a list of instructions)
    - max-initial-program-size (max size of randomly generated programs)"
-  [{:keys [population-size max-generations error-function instructions max-initial-program-size]}]
+  [{:keys [population-size
+           max-generations
+           error-function
+           instructions
+           max-initial-program-size]}]
   :STUB
   )
 
@@ -273,9 +284,9 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
 
 (defn regression-error-function
   "Takes an individual and evaluates it on some test cases. For each test case,
-  runs program with the input set to :in1 in the :input map part of the Push state.
-  Then, the output is the integer on top of the integer stack in the Push state
-  returned by the interpreter. Computes each error by comparing output of
+  runs program with the input set to :in1 in the :input map part of the Push
+  state. Then, the output is the integer on top of the integer stack in the Push
+  state returned by the interpreter. Computes each error by comparing output of
   the program to the correct output.
   Returns the individual with :errors set to the list of errors on each case,
   and :total-error set to the sum of the errors.
