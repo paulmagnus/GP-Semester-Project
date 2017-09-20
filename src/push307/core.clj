@@ -51,8 +51,7 @@
 (defn push-to-stack
   "Pushes item onto stack in state, returning the resulting state."
   [state stack item]
-  :STUB
-  )
+  (assoc state stack (conj (get state stack) item)))
 
 (defn pop-stack
   "Removes top item of stack, returning the resulting state."
