@@ -56,20 +56,19 @@
 (defn pop-stack
   "Removes top item of stack, returning the resulting state."
   [state stack]
-  :STUB
-  )
-
-(defn peek-stack
-  "Returns top item on a stack. If stack is empty, returns :no-stack-item"
-  [state stack]
-  :STUB
-  )
+  (assoc state stack (rest (get state stack))))
 
 (defn empty-stack?
   "Returns true if the stack is empty in state."
   [state stack]
-  :STUB
-  )
+  (empty? (get state stack)))
+
+(defn peek-stack
+  "Returns top item on a stack. If stack is empty, returns :no-stack-item"
+  [state stack]
+  (if (empty-stack? state stack)
+    :no-stack-item
+    (first (get state stack))))
 
 (defn get-args-from-stacks
   "Takes a state and a list of stacks to take args from. If there are enough
@@ -111,8 +110,15 @@
   "Pushes the input labeled :in1 on the inputs map onto the :exec stack.
   Can't use make-push-instruction, since :input isn't a stack, but a map."
   [state]
-  :STUB
-  )
+  (push-to-stack state :exec (get (get state :input) :in1)))
+
+(defn get-in
+  [state in-num]
+  (let [keyw (keyword (str "in" in-num))
+        inputs (get state :input)]
+    (if (contains? inputs keyw)
+      (push-to-stack state :exec (get inputs keyw))
+      state)))
 
 (defn integer_+
   "Adds the top two integers and leaves result on the integer stack.
@@ -137,22 +143,24 @@
   Note: the second integer on the stack should be subtracted from the top
   integer."
   [state]
-  :STUB
-  )
+  (make-push-instruction state -' [:integer :integer] :integer))
 
 (defn integer_*
   "Multiplies the top two integers and leaves result on the integer stack."
   [state]
-  :STUB
-  )
+  (make-push-instruction state *' [:integer :integer] :integer))
 
 (defn integer_%
   "This instruction implements 'protected division'.
   In other words, it acts like integer division most of the time, but if the
   denominator is 0, it returns the numerator, to avoid divide-by-zero errors."
   [state]
-  :STUB
-  )
+  (make-push-instruction state
+                         #(if (= 0 %2)
+                            %1
+                            (quot %1 %2))
+                         [:integer :integer]
+                         :integer))
 
 
 ;;;;;;;;;;
@@ -164,8 +172,7 @@
   or if the next element is a literal, pushes it onto the correct stack.
   Returns the new Push state."
   [push-state]
-  :STUB
-  )
+  :STUB)
 
 (defn interpret-push-program
   "Runs the given program starting with the stacks in start-state. Continues
