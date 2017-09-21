@@ -106,13 +106,20 @@
 ;;;;;;;;;;
 ;; Instructions
 
+(def legal-instructions
+  '(in1
+    integer_+
+    integer_-
+    integer_*
+    integer_%))
+
 (defn in1
   "Pushes the input labeled :in1 on the inputs map onto the :exec stack.
   Can't use make-push-instruction, since :input isn't a stack, but a map."
   [state]
   (push-to-stack state :exec (get (get state :input) :in1)))
 
-(defn get-in
+(defn get-input
   [state in-num]
   (let [keyw (keyword (str "in" in-num))
         inputs (get state :input)]
@@ -166,21 +173,49 @@
 ;;;;;;;;;;
 ;; Interpreter
 
+(defn push-program-to-exec
+  [state prog]
+  (cond (empty? prog) state
+        :else (push-to-stack (push-program-to-exec state (rest prog))
+                             :exec
+                             (first prog))))
+
 (defn interpret-one-step
   "Helper function for interpret-push-program.
   Takes a Push state and executes the next instruction on the exec stack,
   or if the next element is a literal, pushes it onto the correct stack.
   Returns the new Push state."
   [push-state]
-  :STUB)
+  (let [top (peek-stack push-state :exec)
+        top_type (type top)
+        state (pop-stack push-state :exec)]
+    ; determine which stack the top goes into or if it is an instruction
+    (cond
+      ; empty sublist
+      (= top_type (type '())) state
+      ; sublist
+      (= top_type (type '(1))) (push-program-to-exec state top)
+      ; case for string
+      (= top_type (type "")) (push-to-stack state :string top)
+      ; both java.lang.Long and java.lang.Integer
+      (or (= top_type (type 0))
+          (= top_type (type (int 0))))(push-to-stack state :integer top)
+      ; case for legal instructions
+      (some #(= top %) legal-instructions) ((eval top) state)
+      ; illegal instructions return :illegal-instruction
+      :else :illegal-instruction)))
+      
 
 (defn interpret-push-program
   "Runs the given program starting with the stacks in start-state. Continues
   until the exec stack is empty. Returns the state of the stacks after the
   program finishes executing."
   [program start-state]
-  :STUB
-  )
+  (let [state (push-program-to-exec start-state program)]
+    (loop [curr-state state]
+      (if (empty-stack? curr-state :exec)
+        curr-state
+        (recur (interpret-one-step curr-state))))))
 
 
 ;;;;;;;;;;
