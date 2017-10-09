@@ -23,6 +23,7 @@
    :errors [8 7 6 5 4 3 2 1 0 1]
    :total-error 37})
 
+;; The empty individual
 (def empty-individual
   {:program '()
    :errors []
@@ -545,3 +546,5 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
 
 
          
+
+
