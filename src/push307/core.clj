@@ -23,6 +23,15 @@
    :errors [8 7 6 5 4 3 2 1 0 1]
    :total-error 37})
 
+(def empty-individual
+  {:program '()
+   :errors []
+   :total-error 0})
+
+
+       
+              
+              
 
 ;;;;;;;;;;
 ;; Instructions must all be either functions that take one Push
@@ -78,10 +87,10 @@
   :not-enough-args."
   [state stacks]
   (loop [state state
-         stacks stacks
+         stacks (reverse stacks)
          args '()]
     (if (empty? stacks)
-      {:state state :args (reverse args)}
+      {:state state :args args}
       (let [stack (first stacks)]
         (if (empty-stack? state stack)
           :not-enough-args
@@ -98,7 +107,7 @@
   (let [args-pop-result (get-args-from-stacks state arg-stacks)]
     (if (= args-pop-result :not-enough-args)
       state
-      (let [result (apply function (reverse (:args args-pop-result)))
+      (let [result (apply function (:args args-pop-result))
             new-state (:state args-pop-result)]
         (push-to-stack new-state return-stack result)))))
 
@@ -117,7 +126,10 @@
   "Pushes the input labeled :in1 on the inputs map onto the :exec stack.
   Can't use make-push-instruction, since :input isn't a stack, but a map."
   [state]
-  (push-to-stack state :exec (get (get state :input) :in1)))
+  (let [in-val (get (get state :input) :in1)]
+    (if (nil? in-val)
+      state
+      (push-to-stack state :exec (get (get state :input) :in1)))))
 
 (defn get-input
   [state in-num]
@@ -132,18 +144,6 @@
   If integer stack has fewer than two elements, noops."
   [state]
   (make-push-instruction state +' [:integer :integer] :integer))
-
-;;;; This is an example of what would be necessary to implement integer_+
-;;;; without the useful helper function make-push-instruction.
-;; (defn integer_+_without_helpers
-;;   [state]
-;;   (if (< (count (:integer state)) 2)
-;;     state
-;;     (let [arg1 (peek-stack state :integer)
-;;           arg2 (peek-stack (pop-stack state :integer) :integer)
-;;           popped-twice (pop-stack (pop-stack state :integer) :integer)]
-;;       (push-to-stack popped-twice :integer (+' arg1 arg2)))))
-
 
 (defn integer_-
   "Subtracts the top two integers and leaves result on the integer stack.
@@ -221,50 +221,139 @@
 ;;;;;;;;;;
 ;; GP
 
+;; (defn make-random-push-program
+;;   "Creates and returns a new program. Takes a list of instructions and
+;;   a maximum initial program size."
+;;   [instructions max-initial-program-size]
+;;   (loop [program '()
+;;          size-left max-initial-program-size]
+;;     (if (= size-left 0) program
+;;         (let [rand-val (rand)]
+;;           (if (< rand-val 0.1)
+;;             (let [rand-length (+ 1 (rand-int size-left))]
+;;               (recur (conj program
+;;                            (make-random-push-program
+;;                             instructions
+;;                             rand-length))
+;;                      (- size-left rand-length)))
+;;             (recur (conj program (rand-nth instructions))
+;;                    (dec size-left)))))))
+
 (defn make-random-push-program
   "Creates and returns a new program. Takes a list of instructions and
   a maximum initial program size."
   [instructions max-initial-program-size]
-  :STUB
-  )
+  (repeatedly (rand-int max-initial-program-size) #(rand-nth instructions)))
+
+;; (defn build-individual
+;;   [program test-range test-outputs]
+;;   (let [errors (map #(Math/abs (- %1 %2)) (map program test-range) test-outputs)]
+;;       {:program program
+;;        :errors errors
+;;        :total-error (apply + errors)}))
 
 (defn tournament-selection
   "Selects an individual from the population using a tournament. Returned 
   individual will be a parent in the next generation. Can use a fixed
   tournament size."
-  [population]
-  :STUB
-  )
+  [population tournament-size]
+  (let [sample (repeatedly tournament-size #(rand-nth population))
+        errors (map #(get % :total-error) sample)
+        min-error (apply min errors)
+        min-individuals (filter #(= min-error (get % :total-error)) sample)]
+    (rand-nth min-individuals)))
+
+(defn choose-50%-chance
+  "Takes a list containing one or two elements. If the list contains two
+  elements then a list containing one of the elements is returned with an equal
+  chance for either element being returned. If the list contains only one
+  element then there is a 50% chance that a list containing only the element
+  will be returned and a 50% chance that the empty list will be returned."
+  [lst]
+  (cond (empty? lst) (throw (AssertionError.
+                             "choose-50%-chance expected a non-empty list"))
+        (= (count lst) 1) (if (< (rand) 0.5) lst '())
+        (= (count lst) 2) (list (rand-nth lst))
+        :else (throw (AssertionError.
+                      "choose-50%-chance expected a list of 1 or 2 elements"))))
 
 (defn crossover
   "Crosses over two programs (note: not individuals) using uniform crossover.
   Returns child program."
   [prog-a prog-b]
-  :STUB
-  )
+  (loop [p1 prog-a
+         p2 prog-b
+         child '()]
+    (if (and (empty? p1) (empty? p2))
+      child
+      (recur
+       (rest p1)
+       (rest p2)
+       (concat
+        child
+        ;; choose which parent to pick from
+        (choose-50%-chance (concat
+                            (if (empty? p1) '() (list (first p1)))
+                            (if (empty? p2) '() (list (first p2))))))))))
+
+(defn element-of-list-chance
+  "Takes a list. 5% of the time, returns a list containing one ranodm element of
+  the list. Otherwise, the empty list is returned."
+  [lst]
+  (if (<= (rand) 0.05) (list (rand-nth lst)) '()))
 
 (defn uniform-addition
   "Randomly adds new instructions before every instruction (and at the end of
   the program) with some probability. Returns child program."
   [prog]
-  :STUB
-  )
+  (loop [parent prog
+         child '()]
+    (if (empty? parent)
+      (concat child (element-of-list-chance instructions))
+      (recur (rest parent)
+             (concat
+              child
+              (element-of-list-chance instructions)
+              (list (first parent)))))))
+
+(defn element-keep-chance
+  "Takes an element as a parameter. 5% of the time, a list containing that
+  element is returned. Otherwise, the empty list is returned."
+  [element]
+  (if (<= (rand) 0.95) (list element) '()))
 
 (defn uniform-deletion
-  "Randomly deletes instructions from program at some rate. Returns child
-  program."
-  [prog]
-  :STUB
-  )
+  "Takes a list 'program' and removes 0 or more elements from the list. Each
+  element has a 5% chance of being removed."
+  [program]
+  (loop [parent program
+         child '()]
+    (if (empty? parent)
+      child
+      (recur (rest parent)
+             (concat child (element-keep-chance (first parent)))))))
 
 (defn select-and-vary
   "Selects parent(s) from population and varies them, returning
   a child individual (note: not program). Chooses which genetic operator
   to use probabilistically. Gives 50% chance to crossover,
   25% to uniform-addition, and 25% to uniform-deletion."
+  [population tournament-size]
+  (assoc empty-individual :program
+         (let [parent1 (tournament-selection population tournament-size)
+               rand-number (rand)]
+           (cond (> 0.25 rand-number) (uniform-addition (get parent1 :program))
+                 (> 0.5 rand-number) (uniform-deletion (get parent1 :program))
+                 :else (crossover (get parent1 :program)
+                                  (get (tournament-selection
+                                        population
+                                        tournament-size)
+                                       :program))))))
+
+(defn get-best-individual
   [population]
-  :STUB
-  )
+  (let [best-error (apply min (map #(get % :total-error) population))]
+    (first (filter #(= best-error (get % :total-error)) population))))
 
 (defn report
   "Reports information on the population each generation. Should look something
@@ -284,8 +373,118 @@ Best total error: 727
 Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   "
   [population generation]
-  :STUB
-  )
+  (println "-------------------------------------------------------")
+  (print "             Report for Generation ")
+  (println generation)
+  (println "-------------------------------------------------------")
+  (println "Best program:")
+  (let [best-individual (get-best-individual population)]
+    (println (get best-individual :program))
+    (print "\nBest program size: ")
+    (println (count (get best-individual :program)))
+    (print "\nBest total error: ")
+    (println (get best-individual :total-error))
+    (print "\nBest errors: ")
+    (println (get best-individual :errors))))
+
+(defn initialize-population
+  [population-size
+   instructions
+   max-size]
+  (repeatedly
+   population-size
+   #(assoc
+     empty-individual
+     :program
+     (make-random-push-program instructions max-size))))
+
+
+
+;;;;;;;;;;
+;; The functions below are specific to a particular problem.
+;; A different problem would require replacing these functions.
+;; Problem: f(x) = x^3 + x + 3
+
+(defn target-function
+  "Target function: f(x) = x^3 + x + 3
+  Should literally compute this mathematical function."
+  [x]
+  (+ (* x x x) x 3))
+
+(def test-cases
+  (range 100))
+
+(def test-targets
+  (map target-function test-cases))
+
+;; (defn eval-to-number
+;;   "Function takes output of program and converts it to a number. This will
+;;   be changed for each problem."
+;;   [val]
+;;   (if (= val :no-stack-item)
+;;     100000
+;;     val))
+
+(defn fitness
+  [result-val target]
+  (if (= result-val :no-stack-item)
+    100000   ; this is the penalty
+    (Math/abs (- result-val target))))
+
+
+
+(defn regression-error-function
+  "Takes an individual and evaluates it on some test cases. For each test case,
+  runs program with the input set to :in1 in the :input map part of the Push
+  state. Then, the output is the integer on top of the integer stack in the Push
+  state returned by the interpreter. Computes each error by comparing output of
+  the program to the correct output.
+  Returns the individual with :errors set to the list of errors on each case,
+  and :total-error set to the sum of the errors.
+  Note: You must consider what to do if the program doesn't leave anything
+  on the integer stack."
+  [individual stack fitness-function]
+  (let [program (get individual :program)
+        result-states (map #(interpret-push-program
+                             program
+                             (push-to-stack empty-push-state :input {:in1 %}))
+                           test-cases)
+        result-values (map #(peek-stack % stack) result-states)
+        errors (map fitness result-values test-targets)]
+    (assoc (assoc individual :errors errors) :total-error (apply + errors))))
+
+;; (defn regression-error-function
+;;   "Takes an individual and evaluates it on some test cases. For each test case,
+;;   runs program with the input set to :in1 in the :input map part of the Push
+;;   state. Then, the output is the integer on top of the integer stack in the Push
+;;   state returned by the interpreter. Computes each error by comparing output of
+;;   the program to the correct output.
+;;   Returns the individual with :errors set to the list of errors on each case,
+;;   and :total-error set to the sum of the errors.
+;;   Note: You must consider what to do if the program doesn't leave anything
+;;   on the integer stack."
+;;   [individual stack-name eval-function]
+;;   (let [program (get individual :program)
+;;         result-states (map #(interpret-push-program
+;;                              program
+;;                              (push-to-stack empty-push-state :input {:in1 %}))
+;;                            test-cases)
+;;         result-values (map
+;;                        #(eval-function (peek-stack % stack-name))
+;;                        result-states)
+;;         errors (map #(if (= %1 :infinity)
+;;                        :infinity
+;;                        (Math/abs (- %1 %2))) result-values test-targets)]
+;;     (assoc (assoc individual :errors errors) :total-error (apply + errors))))
+
+(def example-population
+  (map #(regression-error-function % :integer fitness)
+       (repeatedly 50 #(assoc
+                        empty-individual
+                        :program
+                        (make-random-push-program
+                         instructions
+                         10)))))
 
 (defn push-gp
   "Main GP loop. Initializes the population, and then repeatedly
@@ -307,35 +506,27 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
            error-function
            instructions
            max-initial-program-size]}]
-  :STUB
-  )
-
-
-;;;;;;;;;;
-;; The functions below are specific to a particular problem.
-;; A different problem would require replacing these functions.
-;; Problem: f(x) = x^3 + x + 3
-
-(defn target-function
-  "Target function: f(x) = x^3 + x + 3
-  Should literally compute this mathematical function."
-  [x]
-  :STUB
-  )
-
-(defn regression-error-function
-  "Takes an individual and evaluates it on some test cases. For each test case,
-  runs program with the input set to :in1 in the :input map part of the Push
-  state. Then, the output is the integer on top of the integer stack in the Push
-  state returned by the interpreter. Computes each error by comparing output of
-  the program to the correct output.
-  Returns the individual with :errors set to the list of errors on each case,
-  and :total-error set to the sum of the errors.
-  Note: You must consider what to do if the program doesn't leave anything
-  on the integer stack."
-  [individual]
-  :STUB
-  )
+  (loop [generation 0
+         population (initialize-population
+                     population-size
+                     instructions
+                     max-initial-program-size)]
+    
+    (let [curr-pop (map
+                    #(regression-error-function % :integer fitness)
+                    population)]
+      (report curr-pop generation)
+      (if (> generation max-generations)
+        ;; (get-best-individual curr-pop)
+        nil
+        (if (empty? (filter #(= 0 (get % :total-error)) curr-pop))
+          (recur
+           (inc generation)
+           (repeatedly population-size #(select-and-vary curr-pop
+                                                         (* 0.05
+                                                            population-size))))
+          ;; (get-best-individual curr-pop))))))
+          :SUCCESS)))))
 
 
 ;;;;;;;;;;
@@ -349,3 +540,7 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
             :max-generations 500
             :population-size 200
             :max-initial-program-size 50}))
+
+
+
+         
