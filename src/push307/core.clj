@@ -23,6 +23,7 @@
    :errors [8 7 6 5 4 3 2 1 0 1]
    :total-error 37})
 
+; Basic empty individual
 (def empty-individual
   {:program '()
    :errors []
