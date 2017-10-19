@@ -9,6 +9,7 @@
   {:exec '(integer_+ integer_-)
    :integer '(1 2 3 4 5 6 7)
    :string '("abc" "def")
+   :bool '(True False)
    :input {:in1 4 :in2 6}})
 
 ;; An example Push program
@@ -42,14 +43,51 @@
 (def instructions
   (list
    'in1
+
+   ;; integer operators
    'integer_+
    'integer_-
    'integer_*
    'integer_%
+
+   ;; boolean operators
+   ;'boolean_=                           ; logical equivalence
+   ;'boolean_and                         ; logical and
+   ;'boolean_dup                         ; duplicate top boolean 
+   ;'boolean_flush                       ; empty the boolean stack
+   ;'boolean_not                         ; logical not
+   ;'boolean_or                          ; logical or
+   ;'boolean_pop                         ; pop top element of boolean stack
+   ;'boolean_rot                         ; rotate top three elements of stack
+   ;'boolean_shove                       ; insert top element deep in stack
+   ;'boolean_stackdepth                  ; push stack depth to integer stack
+   ;'boolean_swap                        ; swaps the top two booleans
+   ;'boolean_yank                        ; removes element deep in the stack
+   ;'boolean_yankdup                     ; copy element deep in the stack
+
+   ;; exec instructions
+   ;; see http://faculty.hampshire.edu/lspector/push3-description.html for
+   ;; detailed descriptions
+   ;'exec_=
+   ;'exec_do*count
+   ;'exec_do*range
+   ;'exec_do*times
+   ;'exec_dup
+   ;'exec_flush
+   ;'exec_if
+   
+   ;; literals
    0
    1
-   ))
+   ;true
+   ;false
+   ;"Left"
+   ;"Right"
+   ;; "NoMove" ; uncomment if needed
 
+   ;; possible additions
+   ;; 'boolean_rand
+   ))
 
 ;;;;;;;;;;
 ;; Utilities
@@ -116,7 +154,6 @@
             new-state (:state args-pop-result)]
         (push-to-stack new-state return-stack result)))))
 
-
 ;;;;;;;;;;
 ;; Instructions
 
@@ -135,6 +172,8 @@
     (if (nil? in-val)
       state
       (push-to-stack state :exec (get (get state :input) :in1)))))
+
+;; Integer operations
 
 (defn integer_+
   "Adds the top two integers and leaves result on the integer stack.
@@ -167,12 +206,61 @@
                          :integer))
 
 
+;; Boolean operations
+
+(defn boolean_=
+  "Takes the top two booleans and leaves true or false, whether they are
+  equal, on the boolean stack."
+  [state]
+  (make-push-instruction state
+                         =
+                         [:boolean :boolean]
+                         :boolean))
+
+(defn boolean_and
+  "Takes the top two booleans and leaves the logical and of those two on
+  the boolean stack."
+  [state]
+  (make-push-instruction state
+                         'and
+                         [:boolean :boolean]
+                         :boolean))
+
+(defn boolean_dup
+  "Duplicates the top boolean on the boolean stack."
+  [state]
+  (let [top (peek-stack state :boolean)]
+    (if (= top :no-stack-item)
+      state
+      (push-to-stack state :boolean (peek-stack state :boolean)))))
+
+(defn boolean_flush
+  "Empties the boolean stack."
+  [state]
+  (assoc state :boolean '()))
+
+(defn boolean_not
+  "Pushes the logical not of the top boolean."
+  [state]
+  (make-push-instruction state
+                         'not
+                         [:boolean]
+                         :boolean))
+
+(defn boolean_or
+  "Pushes the logical or of the top two booleans."
+  [state]
+  (make-push-instruction state
+                         'or
+                         [:boolean :boolean]
+                         :boolean))
+
 ;;;;;;;;;;
 ;; Interpreter
 
 (defn push-program-to-exec
-  “Takes a state and a program and pushes each instruction in the program to
-  the top of the exec stack.”
+  "Takes a state and a program and pushes each instruction in the program to
+  the top of the exec stack."
   [state prog]
   (cond (empty? prog) state
         :else (push-to-stack (push-program-to-exec state (rest prog))
@@ -314,7 +402,8 @@
     ;; base case, return the child
     (if (empty? parent)
       child
-      ;; decide if first element is being kept, then loop with the rest of the program
+      ;; decide if first element is being kept, then loop with the rest of the
+      ;; program
       (recur (rest parent)
              (concat child (element-keep-chance (first parent)))))))
 
@@ -324,7 +413,8 @@
   to use probabilistically. Gives 50% chance to crossover,
   25% to uniform-addition, and 25% to uniform-deletion."
   [population tournament-size]
-  ;; Start building the new individual to be returned. Rest of function to make its program
+  ;; Start building the new individual to be returned. Rest of function to make
+  ;; its program
   (assoc empty-individual :program
          ;; always need to choose 1 parent, random num to determine gen operator
          (let [parent1 (tournament-selection population tournament-size)
@@ -342,27 +432,27 @@
                                        :program))))))
 
 (defn get-best-individual
-  “This takes a population of individuals and determines which one has the
-  best fitness score.”
+  "This takes a population of individuals and determines which one has the
+  best fitness score."
   [population]
   (let [best-error (apply min (map #(get % :total-error) population))]
     (first (filter #(= best-error (get % :total-error)) population))))
 
 (defn report
-  "Reports information on the population each generation. Looks similar to the following.
+  "Reports information on the population each generation. Looks similar to the
+  following.
 
--------------------------------------------------------
+  -------------------------------------------------------
                Report for Generation 3
--------------------------------------------------------
-Best program:
-(in1 integer_% integer_* integer_- 0 1 in1 1 integer_* 0 integer_* 1 in1
-integer_* integer_- in1 integer_% integer_% 0 integer_+ in1 integer_*
-integer_- in1 in1 integer_* integer_+ integer_* in1 integer_- integer_* 1
-integer_%)
-Best program size: 33
-Best total error: 727
-Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
-  "
+  -------------------------------------------------------
+  Best program:
+  (in1 integer_% integer_* integer_- 0 1 in1 1 integer_* 0 integer_* 1 in1
+  integer_* integer_- in1 integer_% integer_% 0 integer_+ in1 integer_*
+  integer_- in1 in1 integer_* integer_+ integer_* in1 integer_- integer_* 1
+  integer_%)
+  Best program size: 33
+  Best total error: 727
+  Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)"
   [population generation]
   (println "-------------------------------------------------------")
   (print "             Report for Generation ")
@@ -379,9 +469,10 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
     (println (get best-individual :errors))))
 
 (defn initialize-population
-  “Takes a population size, list of instructions, and maximum size for any Push program
-  and returns a population of random Push programs built out of the given instructions and
-  with each program having at most a number of instructions equal to the maximum size.”
+  "Takes a population size, list of instructions, and maximum size for any Push
+  program and returns a population of random Push programs built out of the
+  given instructions and with each program having at most a number of
+  instructions equal to the maximum size."
   [population-size
    instructions
    max-size]
@@ -391,10 +482,9 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
    #(assoc
      empty-individual
      :program
-     ;; make a random program based on the instruction set up to the maximum size 
+     ;; make a random program based on the instruction set up to the maximum
+     ;; size 
      (make-random-push-program instructions max-size))))
-
-
 
 ;;;;;;;;;;
 ;; The functions below are specific to a particular problem.
@@ -416,9 +506,9 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   (map target-function test-cases))
 
 (defn fitness
-  “This is the fitness function for the problem. This should be changed for each problem.
-  Takes two numbers: the result of running the test case through the push program and
-  the target value.”
+  "This is the fitness function for the problem. This should be changed for each
+  problem. Takes two numbers: the result of running the test case through the
+  push program and the target value."
   [result-val target]
   (if (= result-val :no-stack-item)
     100000   ; this is the penalty
@@ -468,7 +558,7 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
            max-generations
            error-function
            instructions
-           Max-initial-program-size]}]
+           max-initial-program-size]}]
   ;; for the 0th generation, initialize the population
   (loop [generation 0
          population (initialize-population
