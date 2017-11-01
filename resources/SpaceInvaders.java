@@ -14,12 +14,14 @@ public class SpaceInvaders extends JFrame implements Commons {
 
         add(new Board());
         setTitle("Space Invaders");
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        // uncomment when running without clojure
+        // setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(BOARD_WIDTH, BOARD_HEIGHT);
         setLocationRelativeTo(null);
         setResizable(false);
     }
 
+    // only use this for running without clojure
     public static void main(String[] args) {
         
         EventQueue.invokeLater(() -> {

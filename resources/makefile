@@ -1,26 +1,29 @@
 # compilation flags
 JFLAGS = -g -d
 
-Sprite.class: Sprite.java
-	javac $JFLAGS . Sprite.java
+SpaceInvaders.jar: com/zetcode/SpaceInvaders.class
+	jar cvfe SpaceInvaders.jar com.zetcode.SpaceInvaders ./com/zetcode/*.class
 
-Alien.class: Alien.java Sprite.class
-	javac $JFLAGS . Alien.java
+com/zetcode/SpaceInvaders.class: SpaceInvaders.java com/zetcode/Board.class com/zetcode/Commons.class
+	javac $(JFLAGS) . SpaceInvaders.java
 
-Shot.class: Shot.java Sprite.class
-	javac $JFLAGS . Shot.java
+com/zetcode/Board.class: Board.java com/zetcode/Alien.class com/zetcode/Commons.class com/zetcode/Player.class
+	javac $(JFLAGS) . Board.java
 
-Commons.class: Commons.java
-	javac $JFLAGS . Commons.java
+com/zetcode/Player.class: Player.java com/zetcode/Sprite.class com/zetcode/Commons.class com/zetcode/Shot.class
+	javac $(JFLAGS) . Player.java
 
-Player.class: Player.java Sprite.class Commons.class Shot.class
-	javac $JFLAGS . Player.java
+com/zetcode/Commons.class: Commons.java
+	javac $(JFLAGS) . Commons.java
 
-Board.class: Board.java Alien.class Commons.class Player.class
-	javac $JFLAGS . Board.java
+com/zetcode/Shot.class: Shot.java com/zetcode/Sprite.class
+	javac $(JFLAGS) . Shot.java
 
-SpaceInvaders.class: SpaceInvaders.java Board.class Commons.class
-	javac $JFLAGS .SpaceInvaders.java
+com/zetcode/Alien.class: Alien.java com/zetcode/Sprite.class
+	javac $(JFLAGS) . Alien.java
+
+com/zetcode/Sprite.class: Sprite.java
+	javac $(JFLAGS) . Sprite.java
 
 clean:
-	rm *.class
+	rm -r ./com

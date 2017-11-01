@@ -29,7 +29,7 @@ public class Board extends JPanel implements Runnable, Commons {
     private int deaths = 0;
 
     private boolean ingame = true;
-    private final String explImg = "src/images/explosion.png";
+    private final String explImg = "./resources/images/explosion.png";
     private String message = "Game Over";
 
     private Thread animator;
@@ -277,10 +277,11 @@ public class Board extends JPanel implements Runnable, Commons {
 
         for (Alien alien: aliens) {
 
-            int shot = generator.nextInt(15);
+            int shot = generator.nextInt(10000);
             Alien.Bomb b = alien.getBomb();
 
-            if (shot == CHANCE && alien.isVisible() && b.isDestroyed()) {
+            if (shot < CHANCE && alien.isVisible() && b.isDestroyed()) {
+            // if (shot < CHANCE && alien.isVisible()) {
 
                 b.setDestroyed(false);
                 b.setX(alien.getX());

@@ -6,10 +6,10 @@ import javax.swing.ImageIcon;
 
 public class Player extends Sprite implements Commons {
 
-    private final int START_Y = 280;
-    private final int START_X = 270;
+    private final int START_Y = 460;
+    private final int START_X = 350;
 
-    private final String playerImg = "src/images/player.png";
+    private final String playerImg = "./resources/images/player.png";
     private int width;
 
     public Player() {
