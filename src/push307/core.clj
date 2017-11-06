@@ -16,6 +16,9 @@
 (def example-push-program
   '(3 5 int_* "hello" 4 "world" int_-))
 
+(def example-do-range
+  '(1 6 exec_do*range "hello"))
+
 ;; An example individual in the population
 ;; Made of a map containing, at minimum, a program, the errors for
 ;; the program, and a total error
@@ -72,14 +75,23 @@
    ;; see http://faculty.hampshire.edu/lspector/push3-description.html for
    ;; detailed descriptions
    'exec_=
-   ;'exec_do*range
    'exec_dup
    'exec_pop
    'exec_if
+   'exec_do*range
    
    ;; literals
    0
    1
+   2
+   3
+   4
+   5
+   6
+   7
+   8
+   9
+   10
    ;true
    ;false
    ;"Left"
@@ -124,20 +136,26 @@
     :no-stack-item
     (first (get state stack))))
 
+(defn not-enough-args
+  "takes a vector of args and checks if they contain :no-stack-item
+  returns true if it does, false otherwise"
+  [vec]
+  (some #(= :no-stack-item %) vec))
+
 (defn swap-stack
   "Swaps the top two items of a stack. If stack has <2 items,
   returns :no-stack-item"
   [state stack]
-  (let [first-item (peek-stack state stack)]
-  (if (= first-item :no-stack-item)
-    state
-    (let [temp-state (pop-stack state stack) 
-          second-item (peek-stack temp-state stack)]
-      (if (= second-item :no-stack-item)
-        (push-to-stack temp-state first-item)
-        (push-to-stack (push-to-stack (pop-stack temp-state stack)
-                                      first-item)
-                       second-item))))))
+  (let [first-item (peek-stack state stack)
+        temp-state (pop-stack state stack) 
+        second-item (peek-stack temp-state stack)]
+    (if (not-enough-args [first-item second-item])
+      state
+      (push-to-stack (push-to-stack (pop-stack temp-state stack)
+                                    stack
+                                    first-item)
+                     stack
+                     second-item))))
 
 (defn get-args-from-stacks
   "Takes a state and a list of stacks to take args from. If there are enough
@@ -176,11 +194,32 @@
 ;; Instructions
 
 (def legal-instructions
-  '(in1
-    int_+
-    int_-
-    int_*
-    int_%))
+  '(                ; works?
+    in1             ; y
+    int_+           ; y
+    int_-           ; y
+    int_*           ; y
+    int_%           ; y
+    int_=           ; y
+    int_<           ; y
+    int_>           ; y
+    int_dup         ; y
+    int_flush       ; y
+    int_swap        ; y
+    bool_=          ; y
+    bool_and        ; y              
+    bool_dup        ; y               
+    bool_flush      ; y               
+    bool_not        ; n              
+    bool_or         ; y               
+    bool_pop        ; y                
+    bool_swap       ; y                
+    exec_=          ; y
+    exec_dup        ; y
+    exec_pop        ; y
+    exec_if         ;
+    exec_do*range   ;
+    ))
 
 ;; input operations
 
@@ -360,6 +399,47 @@
   [state]
   (swap-stack state :exec))
 
+(defn exec_if
+  "If the top item of the boolean stack is false, pop the top item of the exec
+  stack. If the top item of the "
+  [state]
+  (let [first-exec (peek-stack state :exec)
+        second-exec (peek-stack (pop-stack state :exec) :exec)
+        bool (peek-stack state :boolean)]
+    ; check if there are enough args
+    (if (not-enough-args [first-exec second-exec bool])
+      state
+      (if (= false bool)
+        (pop-stack state :exec)
+        (push-to-stack (pop-stack (pop-stack state :exec) :exec) :exec first-exec)))))
+
+          
+(defn exec_do*range
+  [state]
+  (let [dest-indx (peek-stack state :integer)
+        curr-indx (peek-stack (pop-stack state :integer) :integer)
+        loop-code (peek-stack state :exec)]
+    ; check if there are enough args
+    (println [dest-indx curr-indx loop-code])
+    (if (not-enough-args [dest-indx curr-indx loop-code])
+      state
+      (if (= dest-indx curr-indx)
+        (pop-stack state :integer)
+        (let [next-indx (+ curr-indx (if (< dest-indx curr-indx) -1 1))]
+          (push-to-stack
+           (push-to-stack
+            (push-to-stack
+             (push-to-stack (pop-stack state :integer)
+                            :exec
+                            'exec_do*range)
+             :exec
+             dest-indx)
+            :exec
+            next-indx)
+           :exec
+           (peek-stack state :exec)))))))
+
+
 
 
 ;;;;;;;;;;
@@ -384,6 +464,8 @@
         top_type (type top)
         state (pop-stack push-state :exec)]
     ;; determine which stack the top goes into or if it is an instruction
+    ;(println legal-instructions)
+    ;(println top)
     (cond
       ;; empty sublist
       (= top_type (type '())) state
@@ -393,7 +475,9 @@
       (= top_type (type "")) (push-to-stack state :string top)
       ;; both java.lang.Long and java.lang.Integer
       (or (= top_type (type 0))
-          (= top_type (type (int 0))))(push-to-stack state :integer top)
+          (= top_type (type (int 0)))) (push-to-stack state :integer top)
+      ;; case for booleans
+      (= top_type (type true)) (push-to-stack state :boolean top)
       ;; case for legal instructions
       (some #(= top %) legal-instructions) ((eval top) state)
       ;; illegal instructions return :illegal-instruction
