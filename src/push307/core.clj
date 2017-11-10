@@ -11,7 +11,7 @@
 
 ;; An example Push state
 (def example-push-state
-  {:exec '(integer_+ integer_-)
+  {:exec '(int_+ int_-)
    :integer '(1 2 3 4 5 6 7)
    :string '("abc" "def")
    :bool '(True False)
@@ -19,13 +19,16 @@
 
 ;; An example Push program
 (def example-push-program
-  '(3 5 integer_* "hello" 4 "world" integer_-))
+  '(3 5 int_* "hello" 4 "world" int_-))
+
+(def example-do-range
+  '(1 6 exec_do*range "hello"))
 
 ;; An example individual in the population
 ;; Made of a map containing, at minimum, a program, the errors for
 ;; the program, and a total error
 (def example-individual
-  {:program '(3 5 integer_* "hello" 4 "world" integer_-)
+  {:program '(3 5 int_* "hello" 4 "world" int_-)
    :errors [8 7 6 5 4 3 2 1 0 1]
    :total-error 37})
 
@@ -49,41 +52,50 @@
   (list
    ;; 'in1
 
-   ;; ;; integer operators
-   ;; 'integer_+
-   ;; 'integer_-
-   ;; 'integer_*
-   ;; 'integer_%
+   ;; integer operators
+   'int_+
+   'int_-
+   'int_*
+   'int_%
+   'int_=
+   'int_<
+   'int_>
+   'int_dup
+   'int_flush
+   'int_swap
+   ;'int_mod
 
    ;; boolean operators
-   ;'boolean_=                           ; logical equivalence
-   ;'boolean_and                         ; logical and
-   ;'boolean_dup                         ; duplicate top boolean 
-   ;'boolean_flush                       ; empty the boolean stack
-   ;'boolean_not                         ; logical not
-   ;'boolean_or                          ; logical or
-   ;'boolean_pop                         ; pop top element of boolean stack
-   ;'boolean_rot                         ; rotate top three elements of stack
-   ;'boolean_shove                       ; insert top element deep in stack
-   ;'boolean_stackdepth                  ; push stack depth to integer stack
-   ;'boolean_swap                        ; swaps the top two booleans
-   ;'boolean_yank                        ; removes element deep in the stack
-   ;'boolean_yankdup                     ; copy element deep in the stack
+   'bool_=                           ; logical equivalence
+   'bool_and                         ; logical and
+   'bool_dup                         ; duplicate top boolean 
+   'bool_flush                       ; empty the boolean stack
+   'bool_not                         ; logical not
+   'bool_or                          ; logical or
+   'bool_pop                         ; pop top element of boolean stack
+   'bool_swap                        ; swaps the top two booleans
 
    ;; exec instructions
    ;; see http://faculty.hampshire.edu/lspector/push3-description.html for
    ;; detailed descriptions
-   ;'exec_=
-   ;'exec_do*count
-   ;'exec_do*range
-   ;'exec_do*times
-   ;'exec_dup
-   ;'exec_flush
-   ;'exec_if
+   'exec_=
+   'exec_dup
+   'exec_pop
+   'exec_if
+   'exec_do*range
    
    ;; literals
    0
    1
+   2
+   3
+   4
+   5
+   6
+   7
+   8
+   9
+   10
    ;true
    ;false
    ;"Left"
@@ -91,7 +103,7 @@
    ;; "NoMove" ; uncomment if needed
 
    ;; possible additions
-   ;; 'boolean_rand
+   ;; 'bool_rand
    ))
 
 ;;;;;;;;;;
@@ -102,6 +114,8 @@
   {:exec '()
    :integer '()
    :string '()
+   :boolean '()
+   :gamestate '()
    :input {}})
 
 (defn push-to-stack
@@ -125,6 +139,27 @@
   (if (empty-stack? state stack)
     :no-stack-item
     (first (get state stack))))
+
+(defn not-enough-args
+  "takes a vector of args and checks if they contain :no-stack-item
+  returns true if it does, false otherwise"
+  [vec]
+  (some #(= :no-stack-item %) vec))
+
+(defn swap-stack
+  "Swaps the top two items of a stack. If stack has <2 items,
+  returns :no-stack-item"
+  [state stack]
+  (let [first-item (peek-stack state stack)
+        temp-state (pop-stack state stack) 
+        second-item (peek-stack temp-state stack)]
+    (if (not-enough-args [first-item second-item])
+      state
+      (push-to-stack (push-to-stack (pop-stack temp-state stack)
+                                    stack
+                                    first-item)
+                     stack
+                     second-item))))
 
 (defn get-args-from-stacks
   "Takes a state and a list of stacks to take args from. If there are enough
@@ -163,11 +198,34 @@
 ;; Instructions
 
 (def legal-instructions
-  '(in1
-    integer_+
-    integer_-
-    integer_*
-    integer_%))
+  '(                ; works?
+    in1             ; y
+    int_+           ; y
+    int_-           ; y
+    int_*           ; y
+    int_%           ; y
+    int_=           ; y
+    int_<           ; y
+    int_>           ; y
+    int_dup         ; y
+    int_flush       ; y
+    int_swap        ; y
+    bool_=          ; y
+    bool_and        ; y              
+    bool_dup        ; y               
+    bool_flush      ; y               
+    bool_not        ; n              
+    bool_or         ; y               
+    bool_pop        ; y                
+    bool_swap       ; y                
+    exec_=          ; y
+    exec_dup        ; y
+    exec_pop        ; y
+    exec_if         ;
+    exec_do*range   ;
+    ))
+
+;; input operations
 
 (defn in1
   "Pushes the input labeled :in1 on the inputs map onto the :exec stack.
@@ -178,27 +236,30 @@
       state
       (push-to-stack state :exec (get (get state :input) :in1)))))
 
+
+
+
 ;; Integer operations
 
-(defn integer_+
+(defn int_+
   "Adds the top two integers and leaves result on the integer stack.
   If integer stack has fewer than two elements, noops."
   [state]
   (make-push-instruction state +' [:integer :integer] :integer))
 
-(defn integer_-
+(defn int_-
   "Subtracts the top two integers and leaves result on the integer stack.
   Note: the second integer on the stack should be subtracted from the top
   integer."
   [state]
   (make-push-instruction state -' [:integer :integer] :integer))
 
-(defn integer_*
+(defn int_*
   "Multiplies the top two integers and leaves result on the integer stack."
   [state]
   (make-push-instruction state *' [:integer :integer] :integer))
 
-(defn integer_%
+(defn int_%
   "This instruction implements 'protected division'.
   In other words, it acts like integer division most of the time, but if the
   denominator is 0, it returns the numerator, to avoid divide-by-zero errors."
@@ -206,14 +267,50 @@
   (make-push-instruction state
                          #(if (= 0 %2)
                             %1
-                            (quot %1 %2))
-                         [:integer :integer]
-                         :integer))
+                            (quot %1 %2))))
+                         
+(defn int_=
+  "Pushes TRUE onto the boolean stack if the top two integers on the integer
+  the stack are equal. FALSE otherwise."
+  [state]
+  (make-push-instruction state = [:integer :integer] :integer))                      
+   
+(defn int_<
+  "Pushes TRUE onto the BOOLEAN stack if the second item is less than the top item.
+  FALSE otherwise."
+  [state]
+  (make-push-instruction state < [:integer :integer] :integer))
+
+(defn int_>
+  "Pushes TRUE onto the BOOLEAN stack if the second item is greater than the top item.
+  FALSE otherwise."
+  [state]
+  (make-push-instruction state > [:integer :integer] :integer))
+
+(defn int_dup
+  "Duplicates the top integer on the integer stack."
+  [state]
+  (let [top (peek-stack state :integer)]
+    (if (= top :no-stack-item)
+      state
+      (push-to-stack state :integer (peek-stack state :integer)))))
+   
+(defn int_flush
+  "Empties the integer stack."
+  [state]
+  (assoc state :integer '()))
+
+(defn int_swap
+  "Multiplies the top two integers and leaves result on the integer stack."
+  [state]
+  (swap-stack state :integer))
+
+
 
 
 ;; Boolean operations
 
-(defn boolean_=
+(defn bool_=
   "Takes the top two booleans and leaves true or false, whether they are
   equal, on the boolean stack."
   [state]
@@ -222,7 +319,7 @@
                          [:boolean :boolean]
                          :boolean))
 
-(defn boolean_and
+(defn bool_and
   "Takes the top two booleans and leaves the logical and of those two on
   the boolean stack."
   [state]
@@ -231,7 +328,7 @@
                          [:boolean :boolean]
                          :boolean))
 
-(defn boolean_dup
+(defn bool_dup
   "Duplicates the top boolean on the boolean stack."
   [state]
   (let [top (peek-stack state :boolean)]
@@ -239,26 +336,115 @@
       state
       (push-to-stack state :boolean (peek-stack state :boolean)))))
 
-(defn boolean_flush
+(defn bool_flush
   "Empties the boolean stack."
   [state]
   (assoc state :boolean '()))
 
-(defn boolean_not
+(defn bool_not
   "Pushes the logical not of the top boolean."
   [state]
   (make-push-instruction state
                          'not
                          [:boolean]
                          :boolean))
-
-(defn boolean_or
+(defn bool_or
   "Pushes the logical or of the top two booleans."
   [state]
   (make-push-instruction state
                          'or
                          [:boolean :boolean]
                          :boolean))
+
+(defn bool_pop
+  "Pops the top item of the boolean stack"
+  [state]
+  (pop-stack state :boolean))
+
+(defn bool_swap
+  "Swaps the top two items of the boolean stack if the stack has 2 or more items"
+  [state]
+  (swap-stack state :boolean))
+
+  
+
+  
+;; Exec operations
+
+(defn exec_=
+  "pushes TRUE to the boolean stack if the top two items of the exec stack are
+  the same. FALSE otherwise."
+  [state]
+  (let [first-item (peek-stack state :exec)]
+  (if (= first-item :no-stack-item)
+    state
+    (let [temp-state (pop-stack state :exec) 
+          second-item (peek-stack temp-state :exec)]
+      (push-to-stack state
+                     :boolean
+                     (if (= '(first-item) '(second-item))
+                       true
+                       false))))))
+(defn exec_dup
+  "Pushes the top item of the exec stack onto the exec stack"
+  [state]
+  (let [top (peek-stack state :exec)]
+    (if (= top :no-stack-item)
+      state
+      (push-to-stack state :exec (peek-stack state :exec)))))
+
+(defn exec_pop
+  "Pops the top item of the exec stack"
+  [state]
+  (pop-stack state :exec))
+
+(defn exec_swap
+  "Swaps the top two items of the exec stack if the stack has 2 or more items"
+  [state]
+  (swap-stack state :exec))
+
+(defn exec_if
+  "If the top item of the boolean stack is false, pop the top item of the exec
+  stack. If the top item of the "
+  [state]
+  (let [first-exec (peek-stack state :exec)
+        second-exec (peek-stack (pop-stack state :exec) :exec)
+        bool (peek-stack state :boolean)]
+    ; check if there are enough args
+    (if (not-enough-args [first-exec second-exec bool])
+      state
+      (if (= false bool)
+        (pop-stack state :exec)
+        (push-to-stack (pop-stack (pop-stack state :exec) :exec) :exec first-exec)))))
+
+          
+(defn exec_do*range
+  [state]
+  (let [dest-indx (peek-stack state :integer)
+        curr-indx (peek-stack (pop-stack state :integer) :integer)
+        loop-code (peek-stack state :exec)]
+    ; check if there are enough args
+    (println [dest-indx curr-indx loop-code])
+    (if (not-enough-args [dest-indx curr-indx loop-code])
+      state
+      (if (= dest-indx curr-indx)
+        (pop-stack state :integer)
+        (let [next-indx (+ curr-indx (if (< dest-indx curr-indx) -1 1))]
+          (push-to-stack
+           (push-to-stack
+            (push-to-stack
+             (push-to-stack (pop-stack state :integer)
+                            :exec
+                            'exec_do*range)
+             :exec
+             dest-indx)
+            :exec
+            next-indx)
+           :exec
+           (peek-stack state :exec)))))))
+
+
+
 
 ;;;;;;;;;;
 ;; Interpreter
@@ -282,6 +468,8 @@
         top_type (type top)
         state (pop-stack push-state :exec)]
     ;; determine which stack the top goes into or if it is an instruction
+    ;(println legal-instructions)
+    ;(println top)
     (cond
       ;; empty sublist
       (= top_type (type '())) state
@@ -291,7 +479,9 @@
       (= top_type (type "")) (push-to-stack state :string top)
       ;; both java.lang.Long and java.lang.Integer
       (or (= top_type (type 0))
-          (= top_type (type (int 0))))(push-to-stack state :integer top)
+          (= top_type (type (int 0)))) (push-to-stack state :integer top)
+      ;; case for booleans
+      (= top_type (type true)) (push-to-stack state :boolean top)
       ;; case for legal instructions
       (some #(= top %) legal-instructions) ((eval top) state)
       ;; illegal instructions return :illegal-instruction
