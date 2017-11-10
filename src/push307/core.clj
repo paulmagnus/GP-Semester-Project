@@ -1,6 +1,11 @@
 (ns push307.core
   (:gen-class))
 
+(import push307.SpaceInvaders)
+(import push307.Board)
+;; (import push307.GameState)
+(import java.awt.EventQueue)
+
 ;;;;;;;;;;
 ;; Examples
 
@@ -42,13 +47,13 @@
 ;; state and return another or constant literals.
 (def instructions
   (list
-   'in1
+   ;; 'in1
 
-   ;; integer operators
-   'integer_+
-   'integer_-
-   'integer_*
-   'integer_%
+   ;; ;; integer operators
+   ;; 'integer_+
+   ;; 'integer_-
+   ;; 'integer_*
+   ;; 'integer_%
 
    ;; boolean operators
    ;'boolean_=                           ; logical equivalence
@@ -293,6 +298,16 @@
       :else :illegal-instruction)))
       
 
+(defn direction-command-to-int
+  [c]
+  (cond (= "Right") 1
+        (= "Left") 2
+        :else 0))
+
+(defn bool-to-int
+  [b]
+  (if b 1 0))
+
 (defn interpret-push-program
   "Runs the given program starting with the stacks in start-state. Continues
   until the exec stack is empty. Returns the state of the stacks after the
@@ -303,6 +318,26 @@
       (if (empty-stack? curr-state :exec)
         curr-state
         (recur (interpret-one-step curr-state))))))
+
+(defn gs-to-map
+  [gs]
+  {:player_x (nth (vec (.getPlayerPosition gs)) 0)
+   :player_y (nth (vec (.getPlayerPosition gs)) 1)
+   :shot_exists (.playerShotExists gs)
+   :shot_x (nth (vec (.getShotPosition gs)) 0)
+   :shot_y (nth (vec (.getShotPosition gs)) 1)
+   :alien_positions (map vec (vec (.getAlienPositions gs)))
+   :bomb_positions (map vec (vec (.getAlienPositions gs)))
+   })
+
+(defn java-push-interpreter
+  [gs prog]
+  (let [end-state (interpret-push-program
+                   prog
+                   (push-to-stack empty-push-state :input (gs-to-map gs)))]
+    (java.util.ArrayList. [(direction-command-to-int
+                            (peek-stack end-state :string))
+                           (bool-to-int (peek-stack end-state :bool))])))
 
 
 ;;;;;;;;;;
@@ -592,12 +627,26 @@
 ;;;;;;;;;;
 ;; The main function. Uses some problem-specific functions.
 
-(defn -main
-  "Runs push-gp, giving it a map of arguments."
-  [& args]
-  (push-gp {:instructions instructions
-            :error-function regression-error-function
-            :max-generations 500
-            :population-size 200
-            :max-initial-program-size 50}))
+;; (defn -main
+;;   "Runs push-gp, giving it a map of arguments."
+;;   [& args]
+;;   (push-gp {:instructions instructions
+;;             :error-function regression-error-function
+;;             :max-generations 500
+;;             :population-size 200
+;;             :max-initial-program-size 50}))
 
+(import java.awt.EventQueue)
+
+(defn run-me
+  []
+  (def game (SpaceInvaders. '(false "Left")))
+  (.setVisible game true))
+
+(defn run
+  []
+  (EventQueue/invokeLater run-me))
+
+(defn -main
+  [& args]
+  (run))
