@@ -6,7 +6,7 @@
 
 (defn run-me
   []
-  (def game (SpaceInvaders.))
+  (def game (SpaceInvaders. '(false "Left")))
   (.setVisible game true))
 
 (defn run
