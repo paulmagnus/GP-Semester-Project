@@ -1,5 +1,6 @@
 (ns push307.core
-  (:gen-class))
+  (:gen-class)
+  (:require [push307.translate :as trans]))
 
 (import push307.SpaceInvaders)
 (import push307.Board)
@@ -36,6 +37,7 @@
 (def empty-individual
   {:program '()
    :errors []
+   :genome '()
    :total-error 0})
 
 (defn abs
@@ -87,19 +89,10 @@
    ;; literals
    0
    1
-   2
-   3
-   4
-   5
-   6
-   7
-   8
-   9
-   10
-   ;true
-   ;false
-   ;"Left"
-   ;"Right"
+   true
+   false
+   "Left"
+   "Right"
    ;; "NoMove" ; uncomment if needed
 
    ;; possible additions
@@ -213,15 +206,15 @@
     bool_and        ; y              
     bool_dup        ; y               
     bool_flush      ; y               
-    bool_not        ; n              
+    bool_not        ; y              
     bool_or         ; y               
     bool_pop        ; y                
     bool_swap       ; y                
     exec_=          ; y
     exec_dup        ; y
     exec_pop        ; y
-    exec_if         ;
-    exec_do*range   ;
+    exec_if         ; y
+    exec_do*range   ; y
     ))
 
 ;; input operations
@@ -414,10 +407,14 @@
       state
       (if (= false bool)
         (pop-stack state :exec)
-        (push-to-stack (pop-stack (pop-stack state :exec) :exec) :exec first-exec)))))
+        (push-to-stack (pop-stack (pop-stack state :exec) :exec)
+                       :exec
+                       first-exec)))))
 
           
 (defn exec_do*range
+  "Loops a piece of code for a number of iterations
+  based on the integer stack"
   [state]
   (let [dest-indx (peek-stack state :integer)
         curr-indx (peek-stack (pop-stack state :integer) :integer)
@@ -432,9 +429,10 @@
           (push-to-stack
            (push-to-stack
             (push-to-stack
-             (push-to-stack (pop-stack state :integer)
-                            :exec
-                            'exec_do*range)
+             (push-to-stack
+              (pop-stack state :integer)
+              :exec
+              'exec_do*range)
              :exec
              dest-indx)
             :exec
@@ -553,6 +551,22 @@
   ;; size of the program will be <=  the given max size
   (repeatedly (+ (rand-int (- max-initial-program-size 5)) 5) 
                      #(rand-nth instructions)))
+
+(defn make-random-plush-genome
+  "Creates and returns a new genome. Takes a list of instructions and
+  a maximum initial program size."
+  [instrustions max-init-prog-size]
+  (loop [genome {:genome '()}
+         instr-left  (inc (rand-int max-init-prog-size))]
+    (if (> instr-left 0)
+      (recur (assoc genome :genome (conj (get genome :genome)
+                          {:instruction (rand-nth instructions)
+                           :silent false
+                           ; random number of closed parens
+                           :close (rand-int 3)}))
+             (dec instr-left))
+      genome)))
+                                       
 
 (defn tournament-selection
   "Selects an individual from the population using a tournament. Returned 
