@@ -20,12 +20,16 @@ import java.lang.Long;
 
 import java.io.IOException;
 
+import java.lang.Math;
+
 // clojure integration
 import clojure.java.api.Clojure;
 import clojure.lang.RT;
 import clojure.lang.Var;
 import clojure.lang.PersistentList;
 import clojure.lang.IFn;
+
+// import javax.swing.WindowEvent;
 
 public class Board extends JPanel implements Runnable, Commons {
 
@@ -47,7 +51,7 @@ public class Board extends JPanel implements Runnable, Commons {
 
     private Thread animator;
 
-    private Var pushInterpreter;
+    private IFn pushInterpreter;
     private PersistentList pushProgram;
 
     public class GameState {
@@ -74,20 +78,56 @@ public class Board extends JPanel implements Runnable, Commons {
 
             return new int[] {shot.getX(), shot.getY()};
         }
-    
-        public int[][] getAlienPositions() {
-            ArrayList<Alien> aliens = board.getAliens();
-            int[][] positions = new int[aliens.size()][2];
 
+        private double distance(int x1, int y1, int x2, int y2) {
+            return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+        }
+    
+        public int[] getAlienPosition() {
+            ArrayList<Alien> aliens = board.getAliens();
+            // int[][] positions = new int[aliens.size()][2];
+
+            double min_distance = 100000;
+            int[] closest_pos = new int[2];
             for(int i = 0; i < aliens.size(); i++) {
-                positions[i] = new int[] {aliens.get(i).getX(),
-                                          aliens.get(i).getY()};
+                // positions[i] = new int[] {aliens.get(i).getX(),
+                //                           aliens.get(i).getY()};
+
+                double dist = distance(player.getX(),
+                                       player.getY(),
+                                       aliens.get(i).getX(),
+                                       aliens.get(i).getY());
+
+                if(dist < min_distance) {
+                    closest_pos = new int[] {aliens.get(i).getX(),
+                                             aliens.get(i).getY()};
+                    min_distance = dist;
+                }
             }
 
-            return positions;
+            // return positions;
+            return closest_pos;
         }
 
-        public int[][] getBombPositions() {
+        public long distanceToNearestAlien() {
+            ArrayList<Alien> aliens = board.getAliens();
+
+            double min_distance = 1000000;
+            for (int i = 0; i < aliens.size(); i++) {
+                double dist = distance(player.getX(),
+                                       player.getY(),
+                                       aliens.get(i).getX(),
+                                       aliens.get(i).getY());
+
+                if (dist < min_distance) {
+                    min_distance = dist;
+                }
+            }
+
+            return Math.round(min_distance);
+        }
+
+        public int[] getBombPosition() {
             ArrayList<Alien> aliens = board.getAliens();
             ArrayList<Alien.Bomb> bombs = new ArrayList<Alien.Bomb>();
         
@@ -97,14 +137,61 @@ public class Board extends JPanel implements Runnable, Commons {
                 }
             }
 
-            int[][] positions = new int[bombs.size()][2];
-        
+            // int[][] positions = new int[bombs.size()][2];
+
+            double min_distance = 1000000;
+            int[] closest_position = new int[2];
+            
             for(int i = 0; i < bombs.size(); i++) {
-                positions[i] = new int[] {bombs.get(i).getX(),
-                                          bombs.get(i).getY()};
+                // positions[i] = new int[] {bombs.get(i).getX(),
+                //                           bombs.get(i).getY()};
+
+                double dist = distance(player.getX(),
+                                       player.getY(),
+                                       bombs.get(i).getX(),
+                                       bombs.get(i).getY());
+
+                if (dist < min_distance) {
+                    min_distance = dist;
+                    closest_position = new int[] {bombs.get(i).getX(),
+                                                 bombs.get(i).getY()};
+                }
             }
 
-            return positions;
+            // return positions;
+            return closest_position;
+        }
+
+        public long distanceToNearestBomb() {
+            ArrayList<Alien> aliens = board.getAliens();
+            ArrayList<Alien.Bomb> bombs = new ArrayList<Alien.Bomb>();
+        
+            for(Alien a : aliens) {
+                if(! a.getBomb().isDestroyed()) {
+                    bombs.add(a.getBomb());
+                }
+            }
+
+            // int[][] positions = new int[bombs.size()][2];
+
+            double min_distance = 1000000;
+            
+            for(int i = 0; i < bombs.size(); i++) {
+                // positions[i] = new int[] {bombs.get(i).getX(),
+                //                           bombs.get(i).getY()};
+
+                double dist = distance(player.getX(),
+                                      player.getY(),
+                                      bombs.get(i).getX(),
+                                      bombs.get(i).getY());
+
+                if (dist < min_distance) {
+                    min_distance = dist;
+                }
+            }
+
+            // return positions;
+            return Math.round(min_distance);
         }
     }
 
@@ -112,18 +199,18 @@ public class Board extends JPanel implements Runnable, Commons {
 
         initBoard();
 
-        // try {
-        //     RT.loadResourceScript("../src/push307/core.clj");
-        // }
-        // catch (IOException e) {
-        //     System.out.println("Clojure script ../src/push307/core.clj failed to load");
-        //     System.exit(1);
-        // }
-        // pushInterpreter = RT.var("push307.core", "interpret-push-program");
-        // pushProgram = program;
+        pushProgram = program;
 
         IFn require = Clojure.var("clojure.core", "require");
         require.invoke(Clojure.read("push307.core"));
+        pushInterpreter = Clojure.var("push307.core",
+                                           "java-push-interpreter");
+
+        run();
+    }
+
+    public int getScore() {
+        return NUMBER_OF_ALIENS_TO_DESTROY - deaths;
     }
 
     private void initBoard() {
@@ -132,6 +219,7 @@ public class Board extends JPanel implements Runnable, Commons {
         setFocusable(true);
         d = new Dimension(BOARD_WIDTH, BOARD_HEIGHT);
         setBackground(Color.black);
+        // setVisible(true);
 
         gameInit();
         setDoubleBuffered(true);
@@ -158,6 +246,8 @@ public class Board extends JPanel implements Runnable, Commons {
 
     public void gameInit() {
 
+        // System.out.println("gameInit");
+
         aliens = new ArrayList<>();
 
         for (int i = 0; i < 4; i++) {
@@ -179,6 +269,7 @@ public class Board extends JPanel implements Runnable, Commons {
     }
 
     public void drawAliens(Graphics g) {
+        // System.out.println("drawAliens");
 
         Iterator<Alien> it = aliens.iterator();
 
@@ -252,26 +343,30 @@ public class Board extends JPanel implements Runnable, Commons {
         g.dispose();
     }
 
-    public void gameOver() {
+    // public void gameOver() {
+    //     this.getParent().setEnabled(false);
+    // }
 
-        Graphics g = this.getGraphics();
+    // public void gameOver() {
 
-        g.setColor(Color.black);
-        g.fillRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
+    //     Graphics g = this.getGraphics();
 
-        g.setColor(new Color(0, 32, 48));
-        g.fillRect(50, BOARD_WIDTH / 2 - 30, BOARD_WIDTH - 100, 50);
-        g.setColor(Color.white);
-        g.drawRect(50, BOARD_WIDTH / 2 - 30, BOARD_WIDTH - 100, 50);
+    //     g.setColor(Color.black);
+    //     g.fillRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
 
-        Font small = new Font("Helvetica", Font.BOLD, 14);
-        FontMetrics metr = this.getFontMetrics(small);
+    //     g.setColor(new Color(0, 32, 48));
+    //     g.fillRect(50, BOARD_WIDTH / 2 - 30, BOARD_WIDTH - 100, 50);
+    //     g.setColor(Color.white);
+    //     g.drawRect(50, BOARD_WIDTH / 2 - 30, BOARD_WIDTH - 100, 50);
 
-        g.setColor(Color.white);
-        g.setFont(small);
-        g.drawString(message, (BOARD_WIDTH - metr.stringWidth(message)) / 2,
-                     BOARD_WIDTH / 2);
-    }
+    //     Font small = new Font("Helvetica", Font.BOLD, 14);
+    //     FontMetrics metr = this.getFontMetrics(small);
+
+    //     g.setColor(Color.white);
+    //     g.setFont(small);
+    //     g.drawString(message, (BOARD_WIDTH - metr.stringWidth(message)) / 2,
+    //                  BOARD_WIDTH / 2);
+    // }
 
     public void animationCycle() {
 
@@ -403,6 +498,8 @@ public class Board extends JPanel implements Runnable, Commons {
                     player.setImage(ii.getImage());
                     player.setDying(true);
                     b.setDestroyed(true);
+                    ingame = false;
+                    // System.out.println("Lost");
                 }
             }
 
@@ -424,17 +521,26 @@ public class Board extends JPanel implements Runnable, Commons {
 
         beforeTime = System.currentTimeMillis();
 
-        while (ingame) {
-            
-            // ask for control from GP agent
-            // GameState gs = new GameState(this);
+        while (ingame) {            
+            Object push_result = null;
 
-            // run push in clojure
-            // Object push_result = pushInterpreter.invoke(gs, pushProgram);
-            ArrayList<Long> push_result = new ArrayList<Long>();
+            pushInterpreter = Clojure.var("push307.core",
+                                          "java-push-interpreter");
+
+            
+            if (pushProgram != null &&
+                pushInterpreter != null) {
+                push_result = pushInterpreter.invoke(new GameState(this),
+                                                     pushProgram);
+            }
+            else {
+                System.out.println("Error");
+                System.exit(1);
+            }
+
             try {
                 @SuppressWarnings("unchecked")
-                    ArrayList<Long> result = push_result;
+                    ArrayList<Long> result = (ArrayList<Long>)push_result;
 
                 if (result.get(0) == 0) {
                     // no move
@@ -467,28 +573,30 @@ public class Board extends JPanel implements Runnable, Commons {
             }
 
             
-
+            // System.out.println("repaint");
             repaint();
             animationCycle();
 
             // only for when watching the game
-            // timeDiff = System.currentTimeMillis() - beforeTime;
-            // sleep = DELAY - timeDiff;
+            timeDiff = System.currentTimeMillis() - beforeTime;
+            sleep = DELAY - timeDiff;
 
-            // if (sleep < 0) {
-            //     sleep = 2;
-            // }
+            if (sleep < 0) {
+                sleep = 2;
+            }
 
-            // try {
-            //     Thread.sleep(sleep);
-            // } catch (InterruptedException e) {
-            //     System.out.println("interrupted");
-            // }
+            try {
+                Thread.sleep(sleep);
+            } catch (InterruptedException e) {
+                System.out.println("interrupted");
+            }
             
             beforeTime = System.currentTimeMillis();
         }
 
-        gameOver();
+        // System.out.println("Done");
+
+        // gameOver();
     }
 
     private class TAdapter extends KeyAdapter {
