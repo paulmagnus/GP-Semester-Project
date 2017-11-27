@@ -108,7 +108,6 @@
    :integer '()
    :string '()
    :boolean '()
-   :gamestate {}
    :input {}})
 
 (defn push-to-stack
@@ -191,7 +190,7 @@
 ;; Instructions
 
 (def legal-instructions
-  '(                ; works?
+  `(                
     in1             ; y
     int_+           ; y
     int_-           ; y
@@ -442,6 +441,11 @@
            (peek-stack state :exec)))))))
 
 
+(defn getPlayerX
+  [state]
+  (let [x (get (get state :input) :player_x)]
+    (println x)
+    state))
 
 ;;;;;;;;;;
 ;; Interpreter
@@ -465,8 +469,10 @@
         top_type (type top)
         state (pop-stack push-state :exec)]
     ;; determine which stack the top goes into or if it is an instruction
-    ;(println legal-instructions)
-    ;(println top)
+    ;; (println "legal-instructions")
+    ;; (println legal-instructions)
+    ;; (println "top")
+    ;; (println top)
     (cond
       ;; empty sublist
       (= top_type (type '())) state
@@ -487,8 +493,8 @@
 
 (defn direction-command-to-int
   [c]
-  (cond (= "Right") 1
-        (= "Left") 2
+  (cond (= "Right" c) 1
+        (= "Left" c) 2
         :else 0))
 
 (defn bool-to-int
@@ -513,18 +519,26 @@
    :shot_exists (.playerShotExists gs)
    :shot_x (nth (vec (.getShotPosition gs)) 0)
    :shot_y (nth (vec (.getShotPosition gs)) 1)
-   :alien_positions (map vec (vec (.getAlienPositions gs)))
-   :bomb_positions (map vec (vec (.getAlienPositions gs)))
+   :alien_position (map (vec (.getAlienPosition gs)))
+   :bomb_position (map (vec (.getBombPosition gs)))
+   :alien_distance (.distanceToNearestAlien gs)
+   :bomb_distance (.distanceToNearestBomb gs)
    })
 
 (defn java-push-interpreter
   [gs prog]
+  ;; (println prog)
   (let [end-state (interpret-push-program
                    prog
                    (push-to-stack empty-push-state :input (gs-to-map gs)))]
+    ;; (println end-state)
+    ;; (println (peek-stack end-state :string))
+    ;; (println (peek-stack end-state :boolean))
+    ;; (println "End state:")
+    ;; (println end-state)
     (java.util.ArrayList. [(direction-command-to-int
                             (peek-stack end-state :string))
-                           (bool-to-int (peek-stack end-state :bool))])))
+                           (bool-to-int (peek-stack end-state :boolean))])))
 
 
 ;;;;;;;;;;
@@ -839,17 +853,15 @@
 ;;             :population-size 200
 ;;             :max-initial-program-size 50}))
 
-(import java.awt.EventQueue)
-
 (defn run-me
   []
-  (def game (SpaceInvaders. '(false "Left")))
-  (.setVisible game true))
-
-(defn run
-  []
-  (EventQueue/invokeLater run-me))
+  (def game (SpaceInvaders. (apply list `(1 2 int_+ true bool_dup))))
+  (println "Score:")
+  (println (.getResult game))
+  )
 
 (defn -main
   [& args]
-  (run))
+  (run-me))
+
+  

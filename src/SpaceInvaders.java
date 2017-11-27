@@ -9,20 +9,29 @@ public class SpaceInvaders extends JFrame implements Commons {
 
     private static final long serialVersionUID = 1L;
 
+    private Board board;
+
     public SpaceInvaders(PersistentList pushProgram) {
 
         initUI(pushProgram);
     }
 
     private void initUI(PersistentList pushProgram) {
+        board = new Board(pushProgram);
 
-        add(new Board(pushProgram));
+        add(board);
         setTitle("Space Invaders");
         // uncomment when running without clojure
         // setDefaultCloseOperation(EXIT_ON_CLOSE);
+        // setVisible(true);
+
         setSize(BOARD_WIDTH, BOARD_HEIGHT);
         setLocationRelativeTo(null);
         setResizable(false);
+    }
+
+    public int getResult() {
+        return board.getScore();
     }
 
     // only use this for running without clojure
@@ -33,6 +42,15 @@ public class SpaceInvaders extends JFrame implements Commons {
     //         ex.setVisible(true);
     //     });
     // }
+
+    public static int runMe(PersistentList pushProgram) {
+        EventQueue.invokeLater(() -> {
+                SpaceInvaders ex = new SpaceInvaders(pushProgram);
+                ex.setVisible(true);
+            });
+        // return ex.getResult();
+        return 4;
+    }
 }
 
 
