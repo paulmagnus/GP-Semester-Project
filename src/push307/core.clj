@@ -1,5 +1,6 @@
 (ns push307.core
-  (:gen-class))
+  (:gen-class)
+  (:require [push307.translate :as trans]))
 
 (import push307.SpaceInvaders)
 (import push307.Board)
@@ -36,6 +37,7 @@
 (def empty-individual
   {:program '()
    :errors []
+   :genome '()
    :total-error 0})
 
 (defn abs
@@ -87,15 +89,6 @@
    ;; literals
    0
    1
-   2
-   3
-   4
-   5
-   6
-   7
-   8
-   9
-   10
    true
    false
    "Left"
@@ -450,12 +443,6 @@
 
 
 
-
-
-
-
-
-
 ;;;;;;;;;;
 ;; Interpreter
 
@@ -550,6 +537,22 @@
   ;; size of the program will be <=  the given max size
   (repeatedly (+ (rand-int (- max-initial-program-size 5)) 5) 
                      #(rand-nth instructions)))
+
+(defn make-random-plush-genome
+  "Creates and returns a new genome. Takes a list of instructions and
+  a maximum initial program size."
+  [instrustions max-init-prog-size]
+  (loop [genome {:genome '()}
+         instr-left  (inc (rand-int max-init-prog-size))]
+    (if (> instr-left 0)
+      (recur (assoc genome :genome (conj (get genome :genome)
+                          {:instruction (rand-nth instructions)
+                           :silent false
+                           ; random number of closed parens
+                           :close (rand-int 3)}))
+             (dec instr-left))
+      genome)))
+                                       
 
 (defn tournament-selection
   "Selects an individual from the population using a tournament. Returned 
