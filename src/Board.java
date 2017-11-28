@@ -54,6 +54,8 @@ public class Board extends JPanel implements Runnable, Commons {
     private IFn pushInterpreter;
     private PersistentList pushProgram;
 
+    private Random generator;
+
     public class GameState {
         private Board board;
 
@@ -195,7 +197,9 @@ public class Board extends JPanel implements Runnable, Commons {
         }
     }
 
-    public Board(PersistentList program) {
+    public Board(PersistentList program, long seed) {
+
+        generator = new Random(seed);
 
         initBoard();
 
@@ -261,11 +265,11 @@ public class Board extends JPanel implements Runnable, Commons {
         player = new Player();
         shot = new Shot();
 
-        if (animator == null || !ingame) {
+        // if (animator == null || !ingame) {
 
-            animator = new Thread(this);
-            animator.start();
-        }
+        //     animator = new Thread(this);
+        //     animator.start();
+        // }
     }
 
     public void drawAliens(Graphics g) {
@@ -375,6 +379,7 @@ public class Board extends JPanel implements Runnable, Commons {
             ingame = false;
             message = "Game won!";
         }
+        else {
 
         // player
         player.act();
@@ -399,6 +404,7 @@ public class Board extends JPanel implements Runnable, Commons {
                             = new ImageIcon(explImg);
                         alien.setImage(ii.getImage());
                         alien.setDying(true);
+
                         deaths++;
                         shot.die();
                     }
@@ -467,7 +473,7 @@ public class Board extends JPanel implements Runnable, Commons {
         }
 
         // bombs
-        Random generator = new Random();
+        // Random generator = new Random();
 
         for (Alien alien: aliens) {
 
@@ -511,6 +517,7 @@ public class Board extends JPanel implements Runnable, Commons {
                     b.setDestroyed(true);
                 }
             }
+        }
         }
     }
 
@@ -574,24 +581,24 @@ public class Board extends JPanel implements Runnable, Commons {
 
             
             // System.out.println("repaint");
-            repaint();
+            // repaint();
             animationCycle();
 
             // only for when watching the game
-            timeDiff = System.currentTimeMillis() - beforeTime;
-            sleep = DELAY - timeDiff;
+            // timeDiff = System.currentTimeMillis() - beforeTime;
+            // sleep = DELAY - timeDiff;
 
-            if (sleep < 0) {
-                sleep = 2;
-            }
+            // if (sleep < 0) {
+            //     sleep = 2;
+            // }
 
-            try {
-                Thread.sleep(sleep);
-            } catch (InterruptedException e) {
-                System.out.println("interrupted");
-            }
+            // try {
+            //     Thread.sleep(sleep);
+            // } catch (InterruptedException e) {
+            //     System.out.println("interrupted");
+            // }
             
-            beforeTime = System.currentTimeMillis();
+            // beforeTime = System.currentTimeMillis();
         }
 
         // System.out.println("Done");

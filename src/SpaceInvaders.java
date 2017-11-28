@@ -11,13 +11,13 @@ public class SpaceInvaders extends JFrame implements Commons {
 
     private Board board;
 
-    public SpaceInvaders(PersistentList pushProgram) {
+    public SpaceInvaders(PersistentList pushProgram, long seed) {
 
-        initUI(pushProgram);
+        initUI(pushProgram, seed);
     }
 
-    private void initUI(PersistentList pushProgram) {
-        board = new Board(pushProgram);
+    private void initUI(PersistentList pushProgram, long seed) {
+        board = new Board(pushProgram, seed);
 
         add(board);
         setTitle("Space Invaders");
@@ -43,14 +43,14 @@ public class SpaceInvaders extends JFrame implements Commons {
     //     });
     // }
 
-    public static int runMe(PersistentList pushProgram) {
-        EventQueue.invokeLater(() -> {
-                SpaceInvaders ex = new SpaceInvaders(pushProgram);
-                ex.setVisible(true);
-            });
-        // return ex.getResult();
-        return 4;
-    }
+    // public static int runMe(PersistentList pushProgram) {
+    //     EventQueue.invokeLater(() -> {
+    //             SpaceInvaders ex = new SpaceInvaders(pushProgram);
+    //             ex.setVisible(true);
+    //         });
+    //     // return ex.getResult();
+    //     return 4;
+    // }
 }
 
 

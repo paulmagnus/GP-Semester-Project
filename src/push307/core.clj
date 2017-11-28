@@ -1,6 +1,7 @@
 (ns push307.core
   (:gen-class)
-  (:require [push307.translate :as trans]))
+  ;; (:require [push307.translate :as trans])
+  )
 
 (import push307.SpaceInvaders)
 (import push307.Board)
@@ -215,6 +216,7 @@
     exec_pop        ; y
     exec_if         ; y
     exec_do*range   ; y
+    get_player_x    ; y
     ))
 
 ;; input operations
@@ -441,11 +443,10 @@
            (peek-stack state :exec)))))))
 
 
-(defn getPlayerX
+(defn get_player_x
   [state]
   (let [x (get (get state :input) :player_x)]
-    (println x)
-    state))
+    (push-to-stack state :int x)))
 
 ;;;;;;;;;;
 ;; Interpreter
@@ -527,7 +528,7 @@
 
 (defn java-push-interpreter
   [gs prog]
-  ;; (println prog)
+  ;; (println prog
   (let [end-state (interpret-push-program
                    prog
                    (push-to-stack empty-push-state :input (gs-to-map gs)))]
@@ -855,13 +856,13 @@
 
 (defn run-me
   []
-  (def game (SpaceInvaders. (apply list `(1 2 int_+ true bool_dup))))
-  (println "Score:")
-  (println (.getResult game))
-  )
+  (.getResult (SpaceInvaders. (apply list
+                                     `(1 2 int_+ true bool_dup get_player_x))
+                              100)))
+  
 
 (defn -main
   [& args]
-  (run-me))
+  (println (repeatedly 1 run-me)))
 
   
