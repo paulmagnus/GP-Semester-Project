@@ -16,7 +16,7 @@
   {:exec '(int_+ int_-)
    :integer '(1 2 3 4 5 6 7)
    :string '("abc" "def")
-   :bool '(True False)
+   :boolean '(true false)
    :input {:in1 4 :in2 6}})
 
 ;; An example Push program
@@ -192,7 +192,6 @@
 
 (def legal-instructions
   `(                
-    in1             ; y
     int_+           ; y
     int_-           ; y
     int_*           ; y
@@ -217,19 +216,17 @@
     exec_if         ; y
     exec_do*range   ; y
     get_player_x    ; y
+    get_player_y    ; y
+    shot_exists     ; y
+    get_shot_x      ; y
+    get_shot_y      ; y
+    get_alien_x     ; y
+    get_alien_y     ; y
+    get_bomb_x      ; y
+    get_bomb_y      ; y
+    get_alien_dist  ; y
+    get_bomb_dist   ; y
     ))
-
-;; input operations
-
-(defn in1
-  "Pushes the input labeled :in1 on the inputs map onto the :exec stack.
-  Can't use make-push-instruction, since :input isn't a stack, but a map."
-  [state]
-  (let [in-val (get (get state :input) :in1)]
-    (if (nil? in-val)
-      state
-      (push-to-stack state :exec (get (get state :input) :in1)))))
-
 
 
 
@@ -443,10 +440,53 @@
            (peek-stack state :exec)))))))
 
 
+(defn get-gamestate-info
+  [state name]
+  (get (get state :input) name))
+
 (defn get_player_x
   [state]
-  (let [x (get (get state :input) :player_x)]
-    (push-to-stack state :int x)))
+  (push-to-stack state :integer (get-gamestate-info state :player_x)))
+
+(defn get_player_y
+  [state]
+  (push-to-stack state :integer (get-gamestate-info state :player_y)))
+
+(defn shot_exists
+  [state]
+  (push-to-stack state :boolean (get-gamestate-info state :shot_exists)))
+
+(defn get_shot_x
+  [state]
+  (push-to-stack state :integer (get-gamestate-info state :shot_x)))
+
+(defn get_shot_y
+  [state]
+  (push-to-stack state :integer (get-gamestate-info state :shot_y)))
+
+(defn get_alien_x
+  [state]
+  (push-to-stack state :integer (nth (get-gamestate-info state :alien_position) 0)))
+
+(defn get_alien_y
+  [state]
+  (push-to-stack state :integer (nth (get-gamestate-info state :alien_position) 1)))
+
+(defn get_bomb_x
+  [state]
+  (push-to-stack state :integer (nth (get-gamestate-info state :bomb_position) 0)))
+
+(defn get_bomb_y
+  [state]
+  (push-to-stack state :integer (nth (get-gamestate-info state :bomb_position) 1)))
+
+(defn get_alien_dist
+  [state]
+  (push-to-stack state :integer (get-gamestate-info state :alien_distance)))
+
+(defn get_bomb_dist
+  [state]
+  (push-to-stack state :integer (get-gamestate-info state :bomb_distance)))
 
 ;;;;;;;;;;
 ;; Interpreter
@@ -520,8 +560,8 @@
    :shot_exists (.playerShotExists gs)
    :shot_x (nth (vec (.getShotPosition gs)) 0)
    :shot_y (nth (vec (.getShotPosition gs)) 1)
-   :alien_position (map (vec (.getAlienPosition gs)))
-   :bomb_position (map (vec (.getBombPosition gs)))
+   :alien_position (vec (.getAlienPosition gs))
+   :bomb_position (vec (.getBombPosition gs))
    :alien_distance (.distanceToNearestAlien gs)
    :bomb_distance (.distanceToNearestBomb gs)
    })
@@ -535,8 +575,8 @@
     ;; (println end-state)
     ;; (println (peek-stack end-state :string))
     ;; (println (peek-stack end-state :boolean))
-    ;; (println "End state:")
-    ;; (println end-state)
+    (println "End state:")
+    (println end-state)
     (java.util.ArrayList. [(direction-command-to-int
                             (peek-stack end-state :string))
                            (bool-to-int (peek-stack end-state :boolean))])))
@@ -857,7 +897,10 @@
 (defn run-me
   []
   (.getResult (SpaceInvaders. (apply list
-                                     `(1 2 int_+ true bool_dup get_player_x))
+                                     `(shot_exists
+				       bool_not
+				       false
+				       ))
                               100)))
   
 
