@@ -15,7 +15,7 @@
   {:exec '(int_+ int_-)
    :integer '(1 2 3 4 5 6 7)
    :string '("abc" "def")
-   :bool '(True False)
+   :boolean '(true false)
    :input {:in1 4 :in2 6}})
 
 ;; An example Push program
@@ -31,7 +31,18 @@
 (def example-individual
   {:program '(3 5 int_* "hello" 4 "world" int_-)
    :errors [8 7 6 5 4 3 2 1 0 1]
+   :genome '()
    :total-error 37})
+
+
+(def genome-example
+  {:program '()
+  :error []
+  :genome '({:instruction true :silent false :close 0}
+            {:instruction false :silent false :close 0}
+            {:instruction int_+ :silent false :close 0}
+            {:instruction bool_not :silent false :close 0})
+  :total-errors 0})
 
 ;; The empty individual
 (def empty-individual
@@ -260,7 +271,10 @@
   (make-push-instruction state
                          #(if (= 0 %2)
                             %1
-                            (quot %1 %2))))
+                            (quot %1 %2))
+                         [:integer :integer]
+                         :integer
+                         ))
                          
 (defn int_=
   "Pushes TRUE onto the boolean stack if the top two integers on the integer
@@ -421,7 +435,6 @@
         curr-indx (peek-stack (pop-stack state :integer) :integer)
         loop-code (peek-stack state :exec)]
     ; check if there are enough args
-    (println [dest-indx curr-indx loop-code])
     (if (not-enough-args [dest-indx curr-indx loop-code])
       state
       (if (= dest-indx curr-indx)
@@ -683,11 +696,11 @@
   "Creates and returns a new genome. Takes a list of instructions and
   a maximum initial program size."
   [instrustions max-init-prog-size]
-  (loop [genome {:genome '()}
+  (loop [genome '()
          instr-left  (inc (rand-int max-init-prog-size))]
     (if (> instr-left 0)
-      (recur (assoc genome :genome (conj (get genome :genome)
-                                         (make-random-plush-gene instructions 0.05 2)))
+      (recur (conj genome
+                   (make-random-plush-gene instructions 0.95 2))
              (dec instr-left))
       genome)))
 
@@ -796,6 +809,8 @@
   (println "Best program:")
   (let [best-individual (get-best-individual population)]
     (println (get best-individual :program))
+    (print "\nBest program genome: ")
+    (println (get best-individual :genome))
     (print "\nBest program size: ")
     (println (count (get best-individual :program)))
     (print "\nBest total error: ")
@@ -834,7 +849,7 @@
 
 ;; This is the list of test inputs for the push program.
 (def test-cases
-  (range 100))
+  (range 10))
 
 ;; This is the list of target values for the fitness function.
 (def test-targets
@@ -900,11 +915,17 @@
                      population-size
                      instructions
                      max-initial-program-size)]
-    ;(map #(assoc % :program (trans/translate-plush-genome-to-push-program)
-    ;; get the errors for the current population
-    (let [curr-pop (map
+    ;; translate the genomes from the current pop to programs
+    ;; then get the errors for the current population
+    (let [prog-pop (map
+                    #(assoc %
+                            :program
+                            (trans/translate-plush-genome-to-push-program
+                                       {:genome (get % :genome)}))
+                    population)
+          curr-pop (map
                     #(regression-error-function % :integer fitness)
-                    population)]
+                    prog-pop)]
       (report curr-pop generation)
       ;; if it has exceed the number of generations, terminate the prog
       (if (> generation max-generations)
@@ -916,7 +937,7 @@
           (recur
            (inc generation)
            ;; do variation to make the new population
-           (repeatedly population-size #(select-and-vary curr-pop
+           (repeatedly population-size #(plush-select-and-vary curr-pop
                                                          (* 0.05
                                                             population-size))))
           ;; saved for later use in testing
