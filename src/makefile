@@ -1,31 +1,31 @@
 # compilation flags
-JFLAGS = -g -Xlint -d .
+JFLAGS = -g -d .
 
-default: SpaceInvaders.class #/GameState.class
+default: push307/SpaceInvaders.class #/GameState.class
 
 # SpaceInvaders.jar: SpaceInvaders.class
 # 	jar cvfe SpaceInvaders.jar com.zetcode.SpaceInvaders ./*.class
 
-SpaceInvaders.class: SpaceInvaders.java Board.class Commons.class
+push307/SpaceInvaders.class: SpaceInvaders.java push307/Board.class push307/Commons.class
 	javac $(JFLAGS) SpaceInvaders.java
 
-Board.class: Board.java Alien.class Commons.class Player.class
+push307/Board.class: Board.java push307/Alien.class push307/Commons.class push307/Player.class
 	javac $(JFLAGS) Board.java
 #javac $(JFLAGS) -cp '.:/home/pmagnus/307/GP-Semester-Project/src/push307/clojure.jar' Board.java
 
-Player.class: Player.java Sprite.class Commons.class Shot.class
+push307/Player.class: Player.java push307/Sprite.class push307/Commons.class push307/Shot.class
 	javac $(JFLAGS) Player.java
 
-Commons.class: Commons.java
+push307/Commons.class: Commons.java
 	javac $(JFLAGS) Commons.java
 
-Shot.class: Shot.java Sprite.class
+push307/Shot.class: Shot.java push307/Sprite.class
 	javac $(JFLAGS) Shot.java
 
-Alien.class: Alien.java Sprite.class
+push307/Alien.class: Alien.java push307/Sprite.class
 	javac $(JFLAGS) Alien.java
 
-Sprite.class: Sprite.java
+push307/Sprite.class: Sprite.java
 	javac $(JFLAGS) Sprite.java
 
 clean:
