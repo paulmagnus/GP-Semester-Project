@@ -1,0 +1,5 @@
+#!/bin/bash
+
+make
+printf "Finished make\n"
+lein run
