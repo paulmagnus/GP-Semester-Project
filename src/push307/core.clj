@@ -1,6 +1,6 @@
 (ns push307.core
   (:gen-class)
-  ;; (:require [push307.translate :as trans])
+  (:require [push307.translate :as trans])
   )
 
 (import push307.SpaceInvaders)
