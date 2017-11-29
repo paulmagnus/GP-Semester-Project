@@ -15,7 +15,7 @@
   {:exec '(int_+ int_-)
    :integer '(1 2 3 4 5 6 7)
    :string '("abc" "def")
-   :bool '(True False)
+   :boolean '(true false)
    :input {:in1 4 :in2 6}})
 
 ;; An example Push program
@@ -31,7 +31,18 @@
 (def example-individual
   {:program '(3 5 int_* "hello" 4 "world" int_-)
    :errors [8 7 6 5 4 3 2 1 0 1]
+   :genome '()
    :total-error 37})
+
+
+(def genome-example
+  {:program '()
+  :error []
+  :genome '({:instruction true :silent false :close 0}
+            {:instruction false :silent false :close 0}
+            {:instruction int_+ :silent false :close 0}
+            {:instruction bool_not :silent false :close 0})
+  :total-errors 0})
 
 ;; The empty individual
 (def empty-individual
@@ -259,7 +270,10 @@
   (make-push-instruction state
                          #(if (= 0 %2)
                             %1
-                            (quot %1 %2))))
+                            (quot %1 %2))
+                         [:integer :integer]
+                         :integer
+                         ))
                          
 (defn int_=
   "Pushes TRUE onto the boolean stack if the top two integers on the integer
@@ -420,7 +434,6 @@
         curr-indx (peek-stack (pop-stack state :integer) :integer)
         loop-code (peek-stack state :exec)]
     ; check if there are enough args
-    (println [dest-indx curr-indx loop-code])
     (if (not-enough-args [dest-indx curr-indx loop-code])
       state
       (if (= dest-indx curr-indx)
@@ -551,21 +564,6 @@
   ;; size of the program will be <=  the given max size
   (repeatedly (+ (rand-int (- max-initial-program-size 5)) 5) 
                      #(rand-nth instructions)))
-
-(defn make-random-plush-genome
-  "Creates and returns a new genome. Takes a list of instructions and
-  a maximum initial program size."
-  [instrustions max-init-prog-size]
-  (loop [genome {:genome '()}
-         instr-left  (inc (rand-int max-init-prog-size))]
-    (if (> instr-left 0)
-      (recur (assoc genome :genome (conj (get genome :genome)
-                          {:instruction (rand-nth instructions)
-                           :silent false
-                           ; random number of closed parens
-                           :close (rand-int 3)}))
-             (dec instr-left))
-      genome)))
                                        
 
 (defn tournament-selection
@@ -659,22 +657,23 @@
       (recur (rest parent)
              (concat child (element-keep-chance (first parent)))))))
 
+
 (defn select-and-vary
   "Selects parent(s) from population and varies them, returning
   a child individual (note: not program). Chooses which genetic operator
-  to use probabilistically. Gives 50% chance to crossover,
-  25% to uniform-addition, and 25% to uniform-deletion."
+  to use probabilistically. Gives 80% chance to crossover,
+  10% to uniform-addition, and 10% to uniform-deletion."
   [population tournament-size]
   ;; Start building the new individual to be returned. Rest of function to make
   ;; its program
-  (assoc empty-individual :program
+  (assoc empty-individual :genome
          ;; always need to choose 1 parent, random num to determine gen operator
          (let [parent1 (tournament-selection population tournament-size)
                rand-number (rand)]
            ;; perform uniform addition
-           (cond (> 0.25 rand-number) (uniform-addition (get parent1 :program))
+           (cond (> 0.1 rand-number) (uniform-addition (get parent1 :program))
                  ;; perform uniform deletion
-                 (> 0.5 rand-number) (uniform-deletion (get parent1 :program))
+                 (> 0.2 rand-number) (uniform-deletion (get parent1 :program))
                  ;; perform crossover
                  :else (crossover (get parent1 :program)
                                   ;; need a second parent for crossover
@@ -682,6 +681,116 @@
                                         population
                                         tournament-size)
                                        :program))))))
+
+
+;;;;;;;;;;;;
+;;Plush GP
+
+(defn make-random-plush-gene
+  "Makes a random plush gene based off an instruction set, chance to be silent
+  and a maximum number of close parens"
+  [instructions silent-chance max-close]
+  {:instruction (rand-nth instructions)
+   :silent (if (> (rand) silent-chance) true false)
+   ; random number of closed parens
+   :close (rand-int max-close)})
+
+(defn evolve-close
+  "Gives a small chance for close to be randomized"
+  [gene change-close]
+  (if (> (rand) change-close)
+    gene
+    ; randomly increments or decrements the close value
+    (let [close-gene (get gene :close)]
+      (if (= close-gene 0)
+        (assoc gene :close (inc close-gene))
+        (assoc gene :close ((eval (rand-nth '(inc dec))) close-gene))))))
+
+(defn make-random-plush-genome
+  "Creates and returns a new genome. Takes a list of instructions and
+  a maximum initial program size."
+  [instrustions max-init-prog-size]
+  (loop [genome '()
+         instr-left  (inc (rand-int max-init-prog-size))]
+    (if (> instr-left 0)
+      (recur (conj genome
+                   (make-random-plush-gene instructions 0.95 2))
+             (dec instr-left))
+      genome)))
+
+(defn plush-crossover
+  "Crosses over two programs (note: not individuals) using uniform crossover.
+  Returns child program."
+  [genome-a genome-b]
+  (loop [g1 genome-a
+         g2 genome-b
+         child '()]
+    ;; base case: if both are empty, return an empty list
+    (if (and (empty? g1) (empty? g2))
+      child
+      (recur
+       (rest g1)
+       (rest g2)
+       (concat
+        child
+        ;; choose which parent to pick from
+        (choose-50%-chance (concat
+                            ;; check if parent is empty so as to not return nil
+                            (if (empty? g1) '() (list (evolve-close (first g1) 0.05)))
+                            (if (empty? g2) '() (list (evolve-close (first g2) 0.05))))))))))
+
+(defn random-plush-chance
+  "Takes a list. 5% of the time, returns a list containing one ranodm element of
+  the list. Otherwise, the empty list is returned."
+  [lst chance]
+  (if (<= (rand) chance)
+    (list (make-random-plush-gene lst 0.05 2))
+    '()))
+
+(defn uniform-plush-addition
+  "Randomly adds new instructions before every instruction (and at the end of
+  the program) with some probability. Returns child program."
+  [prog]
+  (loop [parent prog
+         child '()]
+    ;; base case: if the parent is empty, return a random length 1 program
+    (if (empty? parent)
+      (concat child (random-plush-chance instructions 0.05))
+      (recur (rest parent)
+             (concat
+              child
+              (random-plush-chance instructions 0.05)
+              (list (first parent)))))))
+
+
+(defn plush-select-and-vary
+  "Selects parent(s) from population and varies them, returning
+  a child individual (note: not program). Chooses which genetic operator
+  to use probabilistically. Gives 80% chance to crossover,
+  10% to uniform-addition, and 10% to uniform-deletion."
+  [population tournament-size]
+  ;; Start building the new individual to be returned. Rest of function to make
+  ;; its program
+  (assoc empty-individual :genome
+         ;; always need to choose 1 parent, random num to determine gen operator
+         (let [parent1 (tournament-selection population tournament-size)
+               rand-number (rand)]
+           ;; perform uniform addition
+           (cond (> 0.1 rand-number) (uniform-addition (get parent1 :genome))
+                 ;; perform uniform deletion
+                 (> 0.2 rand-number) (uniform-deletion (get parent1 :genome))
+                 ;; perform crossover
+                 :else (crossover (get parent1 :genome)
+                                  ;; need a second parent for crossover
+                                  (get (tournament-selection
+                                        population
+                                        tournament-size)
+                                       :genome))))))
+
+
+;;;;;;;;::::
+;;GP LOOP
+
 
 (defn get-best-individual
   "This takes a population of individuals and determines which one has the
@@ -710,9 +819,12 @@
   (print "             Report for Generation ")
   (println generation)
   (println "-------------------------------------------------------")
+  (println (rand-nth population))
   (println "Best program:")
   (let [best-individual (get-best-individual population)]
     (println (get best-individual :program))
+    (print "\nBest program genome: ")
+    (println (get best-individual :genome))
     (print "\nBest program size: ")
     (println (count (get best-individual :program)))
     (print "\nBest total error: ")
@@ -720,7 +832,7 @@
     (print "\nBest errors: ")
     (println (get best-individual :errors))))
 
-(defn initialize-population
+(defn initialize-plush-population
   "Takes a population size, list of instructions, and maximum size for any Push
   program and returns a population of random Push programs built out of the
   given instructions and with each program having at most a number of
@@ -733,10 +845,10 @@
    ;; assigns the program field the random program
    #(assoc
      empty-individual
-     :program
+     :genome
      ;; make a random program based on the instruction set up to the maximum
      ;; size 
-     (make-random-push-program instructions max-size))))
+     (make-random-plush-genome instructions max-size))))
 
 ;;;;;;;;;;
 ;; The functions below are specific to a particular problem.
@@ -751,7 +863,7 @@
 
 ;; This is the list of test inputs for the push program.
 (def test-cases
-  (range 100))
+  (range 10))
 
 ;; This is the list of target values for the fitness function.
 (def test-targets
@@ -813,14 +925,21 @@
            max-initial-program-size]}]
   ;; for the 0th generation, initialize the population
   (loop [generation 0
-         population (initialize-population
+         population (initialize-plush-population
                      population-size
                      instructions
                      max-initial-program-size)]
-    ;; get the errors for the current population
-    (let [curr-pop (map
+    ;; translate the genomes from the current pop to programs
+    ;; then get the errors for the current population
+    (let [prog-pop (map
+                    #(assoc %
+                            :program
+                            (trans/translate-plush-genome-to-push-program
+                                       {:genome (get % :genome)}))
+                    population)
+          curr-pop (map
                     #(regression-error-function % :integer fitness)
-                    population)]
+                    prog-pop)]
       (report curr-pop generation)
       ;; if it has exceed the number of generations, terminate the prog
       (if (> generation max-generations)
@@ -832,7 +951,7 @@
           (recur
            (inc generation)
            ;; do variation to make the new population
-           (repeatedly population-size #(select-and-vary curr-pop
+           (repeatedly population-size #(plush-select-and-vary curr-pop
                                                          (* 0.05
                                                             population-size))))
           ;; saved for later use in testing
