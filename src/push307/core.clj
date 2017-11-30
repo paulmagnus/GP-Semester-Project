@@ -34,7 +34,7 @@
    :genome '()
    :total-error 37})
 
-
+;; an example of a genome before translation
 (def genome-example
   {:program '()
   :error []
@@ -145,7 +145,7 @@
   (some #(= :no-stack-item %) vec))
 
 (defn swap-stack
-  "Swaps the top two items of a stack. If stack has <2 items,
+  "Swaps the top two items of a stack. If stack has < 2 items,
   returns :no-stack-item"
   [state stack]
   (let [first-item (peek-stack state stack)
@@ -413,7 +413,10 @@
     (if (not-enough-args [first-exec second-exec bool])
       state
       (if (= false bool)
+        ;; ignore the first item
         (pop-stack state :exec)
+        ;; remove the second item from the exec stack and execute
+        ;; the first item
         (push-to-stack (pop-stack (pop-stack state :exec) :exec)
                        :exec
                        first-exec)))))
@@ -432,13 +435,17 @@
       (if (= dest-indx curr-indx)
         (pop-stack state :integer)
         (let [next-indx (+ curr-indx (if (< dest-indx curr-indx) -1 1))]
+          ; for each iteration, need to push onto the stack, in the order
+          ; they are push:
+          ; 1) exec_do*range, 2) the desination index,
+          ; 3) the current index, 4) the code to be executed
           (push-to-stack
            (push-to-stack
             (push-to-stack
              (push-to-stack
               (pop-stack state :integer)
               :exec
-              'exec_do*range)
+              `exec_do*range)
              :exec
              dest-indx)
             :exec
@@ -563,6 +570,7 @@
         (recur (interpret-one-step curr-state))))))
 
 (defn gs-to-map
+  "converts a game-state to a map of values that can be used by the program"
   [gs]
   {:player_x (nth (vec (.getPlayerPosition gs)) 0)
    :player_y (nth (vec (.getPlayerPosition gs)) 1)
@@ -835,6 +843,9 @@
 
 
 (defn run-game
+  "Runs a game of Space Invaders using the program as the player
+   Uses a specified random seed to ensure the game runs idenitcally
+   across runs with the same seed"
   [prog seed]
   (.getResult (SpaceInvaders. prog seed)))
   
@@ -937,6 +948,10 @@
 
 
 (defn game-error-function
+  "Gets the errors of the program across the test case
+  The test cases are playing a game of Space Invaders with various random seeds
+  Error for a game is the number of surviving aliens, so the programs should try
+  to minimize error, i.e. kill all the aliens"
   [individual stack]
   (let [program (get individual :program)
         errors (pmap #(run-game program %) test-cases)]
