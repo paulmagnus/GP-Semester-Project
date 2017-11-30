@@ -1,33 +1,34 @@
 package push307;
 
-import java.awt.EventQueue;
-import javax.swing.JFrame;
+// import java.awt.EventQueue;
+// import javax.swing.JFrame;
 
 import clojure.lang.PersistentList;
 
-public class SpaceInvaders extends JFrame implements Commons {
+public class SpaceInvaders implements Commons {
 
     private static final long serialVersionUID = 1L;
 
     private Board board;
 
     public SpaceInvaders(PersistentList pushProgram, long seed) {
+	board = new Board(pushProgram, seed);
 
-        initUI(pushProgram, seed);
+        // initUI(pushProgram, seed);
     }
 
     private void initUI(PersistentList pushProgram, long seed) {
         board = new Board(pushProgram, seed);
 
-        add(board);
-        setTitle("Space Invaders");
+        // add(board);
+        // setTitle("Space Invaders");
         // uncomment when running without clojure
         // setDefaultCloseOperation(EXIT_ON_CLOSE);
         // setVisible(true);
 
-        setSize(BOARD_WIDTH, BOARD_HEIGHT);
-        setLocationRelativeTo(null);
-        setResizable(false);
+        // setSize(BOARD_WIDTH, BOARD_HEIGHT);
+        // setLocationRelativeTo(null);
+        // setResizable(false);
     }
 
     public int getResult() {

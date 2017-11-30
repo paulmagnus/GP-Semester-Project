@@ -1,20 +1,20 @@
 package push307;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Toolkit;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+// import java.awt.Color;
+// import java.awt.Dimension;
+// import java.awt.Font;
+// import java.awt.FontMetrics;
+// import java.awt.Graphics;
+// import java.awt.Toolkit;
+// import java.awt.event.KeyAdapter;
+// import java.awt.event.KeyEvent;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
 
-import javax.swing.ImageIcon;
-import javax.swing.JPanel;
+// import javax.swing.ImageIcon;
+// import javax.swing.JPanel;
 
 import java.lang.Long;
 
@@ -31,11 +31,11 @@ import clojure.lang.IFn;
 
 // import javax.swing.WindowEvent;
 
-public class Board extends JPanel implements Runnable, Commons {
+public class Board implements Runnable, Commons {
 
     private static final long serialVersionUID = 1L;
 
-    private Dimension d;
+    // private Dimension d;
     private ArrayList<Alien> aliens;
     private Player player;
     private Shot shot;
@@ -49,7 +49,7 @@ public class Board extends JPanel implements Runnable, Commons {
     private final String explImg = "./resources/images/explosion.png";
     private String message = "Game Over";
 
-    private Thread animator;
+    // private Thread animator;
 
     private IFn pushInterpreter;
     private PersistentList pushProgram;
@@ -220,19 +220,19 @@ public class Board extends JPanel implements Runnable, Commons {
     private void initBoard() {
 
         // addKeyListener(new TAdapter());
-        setFocusable(true);
-        d = new Dimension(BOARD_WIDTH, BOARD_HEIGHT);
-        setBackground(Color.black);
+        // setFocusable(true);
+        // d = new Dimension(BOARD_WIDTH, BOARD_HEIGHT);
+        // setBackground(Color.black);
         // setVisible(true);
 
         gameInit();
-        setDoubleBuffered(true);
+        // setDoubleBuffered(true);
     }
 
-    @Override
+    // @Override
     public void addNotify() {
 
-        super.addNotify();
+        // super.addNotify();
         gameInit();
     }
 
@@ -272,80 +272,80 @@ public class Board extends JPanel implements Runnable, Commons {
         // }
     }
 
-    public void drawAliens(Graphics g) {
-        // System.out.println("drawAliens");
+    // public void drawAliens(Graphics g) {
+    //     // System.out.println("drawAliens");
 
-        Iterator<Alien> it = aliens.iterator();
+    //     Iterator<Alien> it = aliens.iterator();
 
-        for (Alien alien: aliens) {
+    //     for (Alien alien: aliens) {
 
-            if (alien.isVisible()) {
+    //         if (alien.isVisible()) {
 
-                g.drawImage(alien.getImage(), alien.getX(), alien.getY(), this);
-            }
+    //             g.drawImage(alien.getImage(), alien.getX(), alien.getY(), this);
+    //         }
 
-            if (alien.isDying()) {
+    //         if (alien.isDying()) {
 
-                alien.die();
-            }
-        }
-    }
+    //             alien.die();
+    //         }
+    //     }
+    // }
 
-    public void drawPlayer(Graphics g) {
+    // public void drawPlayer(Graphics g) {
 
-        if (player.isVisible()) {
+    //     if (player.isVisible()) {
             
-            g.drawImage(player.getImage(), player.getX(), player.getY(), this);
-        }
+    //         g.drawImage(player.getImage(), player.getX(), player.getY(), this);
+    //     }
 
-        if (player.isDying()) {
+    //     if (player.isDying()) {
 
-            player.die();
-            ingame = false;
-        }
-    }
+    //         player.die();
+    //         ingame = false;
+    //     }
+    // }
 
-    public void drawShot(Graphics g) {
+    // public void drawShot(Graphics g) {
 
-        if (shot.isVisible()) {
+    //     if (shot.isVisible()) {
             
-            g.drawImage(shot.getImage(), shot.getX(), shot.getY(), this);
-        }
-    }
+    //         g.drawImage(shot.getImage(), shot.getX(), shot.getY(), this);
+    //     }
+    // }
 
-    public void drawBombing(Graphics g) {
+    // public void drawBombing(Graphics g) {
 
-        for (Alien a : aliens) {
+    //     for (Alien a : aliens) {
             
-            Alien.Bomb b = a.getBomb();
+    //         Alien.Bomb b = a.getBomb();
 
-            if (!b.isDestroyed()) {
+    //         if (!b.isDestroyed()) {
                 
-                g.drawImage(b.getImage(), b.getX(), b.getY(), this);
-            }
-        }
-    }
+    //             g.drawImage(b.getImage(), b.getX(), b.getY(), this);
+    //         }
+    //     }
+    // }
 
-    @Override
-    public void paintComponent(Graphics g) {
-        super.paintComponent(g);
+    // @Override
+    // public void paintComponent(Graphics g) {
+    //     super.paintComponent(g);
 
-        g.setColor(Color.black);
-        g.fillRect(0, 0, d.width, d.height);
-        g.setColor(Color.green);
+    //     g.setColor(Color.black);
+    //     g.fillRect(0, 0, d.width, d.height);
+    //     g.setColor(Color.green);
 
-        if (ingame) {
+    //     if (ingame) {
 
-            g.drawLine(0, GROUND, BOARD_WIDTH, GROUND);
-            drawAliens(g);
-            drawPlayer(g);
-            drawShot(g);
-            drawBombing(g);
-        }
+    //         g.drawLine(0, GROUND, BOARD_WIDTH, GROUND);
+    //         drawAliens(g);
+    //         drawPlayer(g);
+    //         drawShot(g);
+    //         drawBombing(g);
+    //     }
 
-        Toolkit.getDefaultToolkit().sync();
-        g.dispose();
-    }
+    //     Toolkit.getDefaultToolkit().sync();
+    //     g.dispose();
+    // }
 
     // public void gameOver() {
     //     this.getParent().setEnabled(false);
@@ -400,9 +400,9 @@ public class Board extends JPanel implements Runnable, Commons {
                         && shotX <= (alienX + ALIEN_WIDTH)
                         && shotY >= (alienY)
                         && shotY <= (alienY + ALIEN_HEIGHT)) {
-                        ImageIcon ii
-                            = new ImageIcon(explImg);
-                        alien.setImage(ii.getImage());
+                        // ImageIcon ii
+                        //     = new ImageIcon(explImg);
+                        // alien.setImage(ii.getImage());
                         alien.setDying(true);
 
                         deaths++;
@@ -499,9 +499,9 @@ public class Board extends JPanel implements Runnable, Commons {
                     && bombX <= (playerX + PLAYER_WIDTH)
                     && bombY >= (playerY)
                     && bombY <= (playerY + PLAYER_HEIGHT)) {
-                    ImageIcon ii
-                        = new ImageIcon(explImg);
-                    player.setImage(ii.getImage());
+                    // ImageIcon ii
+                    //     = new ImageIcon(explImg);
+                    // player.setImage(ii.getImage());
                     player.setDying(true);
                     b.setDestroyed(true);
                     ingame = false;
@@ -521,7 +521,7 @@ public class Board extends JPanel implements Runnable, Commons {
         }
     }
 
-    @Override
+    // @Override
     public void run() {
 
         long beforeTime, timeDiff, sleep;
@@ -547,7 +547,7 @@ public class Board extends JPanel implements Runnable, Commons {
 
             try {
                 @SuppressWarnings("unchecked")
-                    ArrayList<Long> result = (ArrayList<Long>)push_result;
+                ArrayList<Long> result = (ArrayList<Long>)push_result;
 
                 if (result.get(0) == 0) {
                     // no move
@@ -606,32 +606,32 @@ public class Board extends JPanel implements Runnable, Commons {
         // gameOver();
     }
 
-    private class TAdapter extends KeyAdapter {
+    // private class TAdapter extends KeyAdapter {
 
-        @Override
-        public void keyReleased(KeyEvent e) {
+    //     @Override
+    //     public void keyReleased(KeyEvent e) {
 
-            player.keyReleased(e);
-        }
+    //         player.keyReleased(e);
+    //     }
 
-        @Override
-        public void keyPressed(KeyEvent e) {
+    //     @Override
+    //     public void keyPressed(KeyEvent e) {
 
-            player.keyPressed(e);
+    //         player.keyPressed(e);
 
-            int x = player.getX();
-            int y = player.getY();
+    //         int x = player.getX();
+    //         int y = player.getY();
 
-            int key = e.getKeyCode();
+    //         int key = e.getKeyCode();
 
-            if (key == KeyEvent.VK_SPACE) {
+    //         if (key == KeyEvent.VK_SPACE) {
                 
-                if (ingame) {
-                    if (!shot.isVisible()) {
-                        shot = new Shot(x, y);
-                    }
-                }
-            }
-        }
-    }
+    //             if (ingame) {
+    //                 if (!shot.isVisible()) {
+    //                     shot = new Shot(x, y);
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 }

@@ -1,8 +1,8 @@
 package push307;
 
-import java.awt.event.KeyEvent;
+// import java.awt.event.KeyEvent;
 
-import javax.swing.ImageIcon;
+// import javax.swing.ImageIcon;
 
 public class Player extends Sprite implements Commons {
 
@@ -19,11 +19,11 @@ public class Player extends Sprite implements Commons {
 
     private void initPlayer() {
         
-        ImageIcon ii = new ImageIcon(playerImg);
+        // ImageIcon ii = new ImageIcon(playerImg);
 
-        width = ii.getImage().getWidth(null);
+        // width = ii.getImage().getWidth(null);
 
-        setImage(ii.getImage());
+        // setImage(ii.getImage());
         setX(START_X);
         setY(START_Y);
     }
@@ -41,33 +41,33 @@ public class Player extends Sprite implements Commons {
         }
     }
 
-    public void keyPressed(KeyEvent e) {
+    // public void keyPressed(KeyEvent e) {
         
-        int key = e.getKeyCode();
+    //     int key = e.getKeyCode();
 
-        if (key == KeyEvent.VK_LEFT) {
+    //     if (key == KeyEvent.VK_LEFT) {
         
-            dx = -2;
-        }
+    //         dx = -2;
+    //     }
 
-        if (key == KeyEvent.VK_RIGHT) {
+    //     if (key == KeyEvent.VK_RIGHT) {
         
-            dx = 2;
-        }
-    }
+    //         dx = 2;
+    //     }
+    // }
 
-    public void keyReleased(KeyEvent e) {
+    // public void keyReleased(KeyEvent e) {
         
-        int key = e.getKeyCode();
+    //     int key = e.getKeyCode();
 
-        if (key == KeyEvent.VK_LEFT) {
+    //     if (key == KeyEvent.VK_LEFT) {
         
-            dx = 0;
-        }
+    //         dx = 0;
+    //     }
 
-        if (key == KeyEvent.VK_RIGHT) {
+    //     if (key == KeyEvent.VK_RIGHT) {
         
-            dx = 0;
-        }
-    }
+    //         dx = 0;
+    //     }
+    // }
 }

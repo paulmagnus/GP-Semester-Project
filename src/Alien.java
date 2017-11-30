@@ -1,6 +1,6 @@
 package push307;
 
-import javax.swing.ImageIcon;
+// import javax.swing.ImageIcon;
 
 public class Alien extends Sprite {
 
@@ -18,8 +18,8 @@ public class Alien extends Sprite {
         this.y = y;
 
         bomb = new Bomb(x, y);
-        ImageIcon ii = new ImageIcon(alienImg);
-        setImage(ii.getImage());
+        // ImageIcon ii = new ImageIcon(alienImg);
+        // setImage(ii.getImage());
     }
 
     public void act(int direction) {
@@ -47,8 +47,8 @@ public class Alien extends Sprite {
             setDestroyed(true);
             this.x = x;
             this.y = y;
-            ImageIcon ii = new ImageIcon(bombImg);
-            setImage(ii.getImage());
+            // ImageIcon ii = new ImageIcon(bombImg);
+            // setImage(ii.getImage());
 
         }
 

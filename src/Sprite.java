@@ -1,11 +1,11 @@
 package push307;
 
-import java.awt.Image;
+// import java.awt.Image;		
 
 public class Sprite {
 
     private boolean visible;
-    private Image image;
+    // private Image image;
     protected int x;
     protected int y;
     protected boolean dying;
@@ -31,15 +31,15 @@ public class Sprite {
         this.visible = visible;
     }
 
-    public void setImage(Image image) {
+    // public void setImage(Image image) {
     
-        this.image = image;
-    }
+    //     this.image = image;
+    // }
 
-    public Image getImage() {
+    // public Image getImage() {
     
-        return image;
-    }
+    //     return image;
+    // }
 
     public void setX(int x) {
     
