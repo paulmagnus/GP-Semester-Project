@@ -67,36 +67,35 @@
    ;; 'in1
 
    ;; integer operators
-   'int_+
-   'int_-
-   'int_*
-   'int_%
-   'int_=
-   'int_<
-   'int_>
-   'int_dup
-   'int_flush
-   'int_swap
-   ;'int_mod
+   `int_+
+   `int_-
+   `int_*
+   `int_%
+   `int_=
+   `int_<
+   `int_>
+   `int_dup
+   `int_flush
+   `int_swap
 
    ;; boolean operators
-   'bool_=                           ; logical equivalence
-   'bool_and                         ; logical and
-   'bool_dup                         ; duplicate top boolean 
-   'bool_flush                       ; empty the boolean stack
-   'bool_not                         ; logical not
-   'bool_or                          ; logical or
-   'bool_pop                         ; pop top element of boolean stack
-   'bool_swap                        ; swaps the top two booleans
+   `bool_=                           ; logical equivalence
+   `bool_and                         ; logical and
+   `bool_dup                         ; duplicate top boolean 
+   `bool_flush                       ; empty the boolean stack
+   ; `bool_not                         ; logical not
+   `bool_or                          ; logical or
+   `bool_pop                         ; pop top element of boolean stack
+   `bool_swap                        ; swaps the top two booleans
 
    ;; exec instructions
    ;; see http://faculty.hampshire.edu/lspector/push3-description.html for
    ;; detailed descriptions
-   'exec_=
-   'exec_dup
-   'exec_pop
-   'exec_if
-   'exec_do*range
+   `exec_=
+   `exec_dup
+   `exec_pop
+   `exec_if
+   `exec_do*range
    
    ;; literals
    0
@@ -105,10 +104,6 @@
    false
    "Left"
    "Right"
-   ;; "NoMove" ; uncomment if needed
-
-   ;; possible additions
-   ;; 'bool_rand
    ))
 
 ;;;;;;;;;;
@@ -523,10 +518,12 @@
         top_type (type top)
         state (pop-stack push-state :exec)]
     ;; determine which stack the top goes into or if it is an instruction
-    ;; (println "legal-instructions")
-    ;; (println legal-instructions)
-    ;; (println "top")
-    ;; (println top)
+    ; (println "legal-instructions")
+    ; (println legal-instructions)
+    ; (println "top")
+    ; (println top)
+    ; (println "namespace:")
+    ; (println (namespace top))
     (cond
       ;; empty sublist
       (= top_type (type '())) state
@@ -581,15 +578,14 @@
 
 (defn java-push-interpreter
   [gs prog]
-  ;; (println prog
   (let [end-state (interpret-push-program
                    prog
                    (push-to-stack empty-push-state :input (gs-to-map gs)))]
     ;; (println end-state)
     ;; (println (peek-stack end-state :string))
     ;; (println (peek-stack end-state :boolean))
-    (println "End state:")
-    (println end-state)
+    ;; (println "End state:")
+    ;; (println end-state)
     (java.util.ArrayList. [(direction-command-to-int
                             (peek-stack end-state :string))
                            (bool-to-int (peek-stack end-state :boolean))])))
@@ -829,6 +825,17 @@
                                        :genome))))))
 
 
+(defn run-game
+  [prog seed]
+  (.getResult (SpaceInvaders. prog seed)))
+  
+; (apply list
+;                                      `(shot_exists				       
+; 				       true
+; 				       bool_or
+; 				       ))
+;                               100)))
+
 ;;;;;;;;::::
 ;;GP LOOP
 
@@ -904,7 +911,7 @@
 
 ;; This is the list of test inputs for the push program.
 (def test-cases
-  (range 10))
+  (range 30 80 5))
 
 ;; This is the list of target values for the fitness function.
 (def test-targets
@@ -920,6 +927,11 @@
     (abs (- result-val target))))
 
 
+(defn game-error-function
+  [individual stack]
+  (let [program (get individual :program)
+        errors (pmap #(run-game program %) test-cases)]
+    (assoc (assoc individual :errors errors) :total-error (apply + errors))))
 
 (defn regression-error-function
   "Takes an individual and evaluates it on some test cases. For each test case,
@@ -979,7 +991,7 @@
                                        {:genome (get % :genome)}))
                     population)
           curr-pop (map
-                    #(regression-error-function % :integer fitness)
+                    #(game-error-function % :integer)
                     prog-pop)]
       (report curr-pop generation)
       ;; if it has exceed the number of generations, terminate the prog
@@ -1004,27 +1016,28 @@
 ;;;;;;;;;;
 ;; The main function. Uses some problem-specific functions.
 
-;; (defn -main
-;;   "Runs push-gp, giving it a map of arguments."
-;;   [& args]
-;;   (push-gp {:instructions instructions
-;;             :error-function regression-error-function
-;;             :max-generations 500
-;;             :population-size 200
-;;             :max-initial-program-size 50}))
+(defn -main
+  "Runs push-gp, giving it a map of arguments."
+  [& args]
+  (push-gp {:instructions instructions
+            :error-function game-error-function
+            :max-generations 10
+            :population-size 10
+            :max-initial-program-size 10}))
 
-(defn run-me
-  []
-  (.getResult (SpaceInvaders. (apply list
-                                     `(shot_exists
-				       bool_not
-				       false
-				       ))
-                              100)))
+; (defn run-me
+;   []
+;   (.getResult (SpaceInvaders. (apply list
+;                                      '(shot_exists
+				       
+; 				       true
+; 				       bool_or
+; 				       ))
+;                               100)))
   
 
-(defn -main
-  [& args]
-  (println (repeatedly 1 run-me)))
+; (defn -main
+;   [& args]
+;   (println (repeatedly 1 run-me)))
 
   
