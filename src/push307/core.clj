@@ -5,7 +5,6 @@
 
 (import push307.SpaceInvaders)
 (import push307.Board)
-;; (import push307.GameState)
 (import java.awt.EventQueue)
 
 ;;;;;;;;;;
@@ -67,36 +66,35 @@
    ;; 'in1
 
    ;; integer operators
-   'int_+
-   'int_-
-   'int_*
-   'int_%
-   'int_=
-   'int_<
-   'int_>
-   'int_dup
-   'int_flush
-   'int_swap
-   ;'int_mod
+   `int_+
+   `int_-
+   `int_*
+   `int_%
+   `int_=
+   `int_<
+   `int_>
+   `int_dup
+   `int_flush
+   `int_swap
 
    ;; boolean operators
-   'bool_=                           ; logical equivalence
-   'bool_and                         ; logical and
-   'bool_dup                         ; duplicate top boolean 
-   'bool_flush                       ; empty the boolean stack
-   'bool_not                         ; logical not
-   'bool_or                          ; logical or
-   'bool_pop                         ; pop top element of boolean stack
-   'bool_swap                        ; swaps the top two booleans
+   `bool_=                           ; logical equivalence
+   `bool_and                         ; logical and
+   `bool_dup                         ; duplicate top boolean 
+   `bool_flush                       ; empty the boolean stack
+   ; `bool_not                         ; logical not
+   `bool_or                          ; logical or
+   `bool_pop                         ; pop top element of boolean stack
+   `bool_swap                        ; swaps the top two booleans
 
    ;; exec instructions
    ;; see http://faculty.hampshire.edu/lspector/push3-description.html for
    ;; detailed descriptions
-   'exec_=
-   'exec_dup
-   'exec_pop
-   'exec_if
-   'exec_do*range
+   `exec_=
+   `exec_dup
+   `exec_pop
+   `exec_if
+   `exec_do*range
    
    ;; literals
    0
@@ -105,10 +103,6 @@
    false
    "Left"
    "Right"
-   ;; "NoMove" ; uncomment if needed
-
-   ;; possible additions
-   ;; 'bool_rand
    ))
 
 ;;;;;;;;;;
@@ -523,10 +517,12 @@
         top_type (type top)
         state (pop-stack push-state :exec)]
     ;; determine which stack the top goes into or if it is an instruction
-    ;; (println "legal-instructions")
-    ;; (println legal-instructions)
-    ;; (println "top")
-    ;; (println top)
+    ; (println "legal-instructions")
+    ; (println legal-instructions)
+    ; (println "top")
+    ; (println top)
+    ; (println "namespace:")
+    ; (println (namespace top))
     (cond
       ;; empty sublist
       (= top_type (type '())) state
@@ -581,15 +577,14 @@
 
 (defn java-push-interpreter
   [gs prog]
-  ;; (println prog
   (let [end-state (interpret-push-program
                    prog
                    (push-to-stack empty-push-state :input (gs-to-map gs)))]
     ;; (println end-state)
     ;; (println (peek-stack end-state :string))
     ;; (println (peek-stack end-state :boolean))
-    (println "End state:")
-    (println end-state)
+    ;; (println "End state:")
+    ;; (println end-state)
     (java.util.ArrayList. [(direction-command-to-int
                             (peek-stack end-state :string))
                            (bool-to-int (peek-stack end-state :boolean))])))
@@ -598,13 +593,13 @@
 ;;;;;;;;;;
 ;; GP
 
-(defn make-random-push-program
-  "Creates and returns a new program. Takes a list of instructions and
-  a maximum initial program size."
-  [instructions max-initial-program-size]
-  ;; size of the program will be <=  the given max size
-  (repeatedly (+ (rand-int (- max-initial-program-size 5)) 5) 
-                     #(rand-nth instructions)))
+; (defn make-random-push-program
+;   "Creates and returns a new program. Takes a list of instructions and
+;   a maximum initial program size."
+;   [instructions max-initial-program-size]
+;   ;; size of the program will be <=  the given max size
+;   (repeatedly (+ (rand-int (- max-initial-program-size 5)) 5) 
+;                      #(rand-nth instructions)))
                                        
 
 (defn tournament-selection
@@ -635,47 +630,57 @@
         :else (throw (AssertionError.
                       "choose-50%-chance expected a list of 1 or 2 elements"))))
 
-(defn crossover
-  "Crosses over two programs (note: not individuals) using uniform crossover.
-  Returns child program."
-  [prog-a prog-b]
-  (loop [p1 prog-a
-         p2 prog-b
-         child '()]
-    ;; base case: if both are empty, return an empty list
-    (if (and (empty? p1) (empty? p2))
-      child
-      (recur
-       (rest p1)
-       (rest p2)
-       (concat
-        child
-        ;; choose which parent to pick from
-        (choose-50%-chance (concat
-                            ;; check if parent is empty so as to not return nil
-                            (if (empty? p1) '() (list (first p1)))
-                            (if (empty? p2) '() (list (first p2))))))))))
+; (defn crossover
+;   "Crosses over two programs (note: not individuals) using uniform crossover.
+;   Returns child program."
+;   [prog-a prog-b]
+;   (loop [p1 prog-a
+;          p2 prog-b
+;          child '()]
+;     ;; base case: if both are empty, return an empty list
+;     (if (and (empty? p1) (empty? p2))
+;       child
+;       (recur
+;        (rest p1)
+;        (rest p2)
+;        (concat
+;         child
+;         ;; choose which parent to pick from
+;         (choose-50%-chance (concat
+;                             ;; check if parent is empty so as to not return nil
+;                             (if (empty? p1) '() (list (first p1)))
+;                             (if (empty? p2) '() (list (first p2))))))))))
 
-(defn element-of-list-chance
-  "Takes a list. 5% of the time, returns a list containing one ranodm element of
-  the list. Otherwise, the empty list is returned."
-  [lst]
-  (if (<= (rand) 0.05) (list (rand-nth lst)) '()))
+; (defn generate-gene-chance
+;   "Takes a list of instructions. 5% of the time, returns a new plush gene map
+;   using one of the instructions from the list. Otherwise, the empty map is
+;   returned."
+;   [instructions]
+;   (if (<= (rand) 0.05)
+;       (make-random-plush-gene instructions 0.95 2)
+;       {}))
 
-(defn uniform-addition
-  "Randomly adds new instructions before every instruction (and at the end of
-  the program) with some probability. Returns child program."
-  [prog]
-  (loop [parent prog
-         child '()]
-    ;; base case: if the parent is empty, return a random length 1 program
-    (if (empty? parent)
-      (concat child (element-of-list-chance instructions))
-      (recur (rest parent)
-             (concat
-              child
-              (element-of-list-chance instructions)
-              (list (first parent)))))))
+;; Don't need
+; (defn element-of-list-chance
+;   "Takes a list. 5% of the time, returns a list containing one ranodm element of
+;   the list. Otherwise, the empty list is returned."
+;   [lst]
+;   (if (<= (rand) 0.05) (list (rand-nth lst)) '()))
+
+; (defn uniform-addition
+;   "Randomly adds new instructions before every instruction (and at the end of
+;   the program) with some probability. Returns child program."
+;   [prog]
+;   (loop [parent prog
+;          child '()]
+;     ;; base case: if the parent is empty, return a random length 1 program
+;     (if (empty? parent)
+;       (concat child (generate-gene-chance instructions))
+;       (recur (rest parent)
+;              (concat
+;               child
+;               (generate-gene-chance instructions)
+;               (list (first parent)))))))
 
 (defn element-keep-chance
   "Takes an element as a parameter. 5% of the time, a list containing that
@@ -699,29 +704,29 @@
              (concat child (element-keep-chance (first parent)))))))
 
 
-(defn select-and-vary
-  "Selects parent(s) from population and varies them, returning
-  a child individual (note: not program). Chooses which genetic operator
-  to use probabilistically. Gives 80% chance to crossover,
-  10% to uniform-addition, and 10% to uniform-deletion."
-  [population tournament-size]
-  ;; Start building the new individual to be returned. Rest of function to make
-  ;; its program
-  (assoc empty-individual :genome
-         ;; always need to choose 1 parent, random num to determine gen operator
-         (let [parent1 (tournament-selection population tournament-size)
-               rand-number (rand)]
-           ;; perform uniform addition
-           (cond (> 0.1 rand-number) (uniform-addition (get parent1 :program))
-                 ;; perform uniform deletion
-                 (> 0.2 rand-number) (uniform-deletion (get parent1 :program))
-                 ;; perform crossover
-                 :else (crossover (get parent1 :program)
-                                  ;; need a second parent for crossover
-                                  (get (tournament-selection
-                                        population
-                                        tournament-size)
-                                       :program))))))
+; (defn select-and-vary
+;   "Selects parent(s) from population and varies them, returning
+;   a child individual (note: not program). Chooses which genetic operator
+;   to use probabilistically. Gives 80% chance to crossover,
+;   10% to uniform-addition, and 10% to uniform-deletion."
+;   [population tournament-size]
+;   ;; Start building the new individual to be returned. Rest of function to make
+;   ;; its program
+;   (assoc empty-individual :genome
+;          ;; always need to choose 1 parent, random num to determine gen operator
+;          (let [parent1 (tournament-selection population tournament-size)
+;                rand-number (rand)]
+;            ;; perform uniform addition
+;            (cond (> 0.1 rand-number) (uniform-addition (get parent1 :program))
+;                  ;; perform uniform deletion
+;                  (> 0.2 rand-number) (uniform-deletion (get parent1 :program))
+;                  ;; perform crossover
+;                  :else (crossover (get parent1 :program)
+;                                   ;; need a second parent for crossover
+;                                   (get (tournament-selection
+;                                         population
+;                                         tournament-size)
+;                                        :program))))))
 
 
 ;;;;;;;;;;;;
@@ -817,17 +822,28 @@
          (let [parent1 (tournament-selection population tournament-size)
                rand-number (rand)]
            ;; perform uniform addition
-           (cond (> 0.1 rand-number) (uniform-addition (get parent1 :genome))
+           (cond (> 0.1 rand-number) (uniform-plush-addition (get parent1 :genome))
                  ;; perform uniform deletion
                  (> 0.2 rand-number) (uniform-deletion (get parent1 :genome))
                  ;; perform crossover
-                 :else (crossover (get parent1 :genome)
+                 :else (plush-crossover (get parent1 :genome)
                                   ;; need a second parent for crossover
                                   (get (tournament-selection
                                         population
                                         tournament-size)
                                        :genome))))))
 
+
+(defn run-game
+  [prog seed]
+  (.getResult (SpaceInvaders. prog seed)))
+  
+; (apply list
+;                                      `(shot_exists				       
+; 				       true
+; 				       bool_or
+; 				       ))
+;                               100)))
 
 ;;;;;;;;::::
 ;;GP LOOP
@@ -904,7 +920,7 @@
 
 ;; This is the list of test inputs for the push program.
 (def test-cases
-  (range 10))
+  (range 30 80 5))
 
 ;; This is the list of target values for the fitness function.
 (def test-targets
@@ -920,6 +936,11 @@
     (abs (- result-val target))))
 
 
+(defn game-error-function
+  [individual stack]
+  (let [program (get individual :program)
+        errors (pmap #(run-game program %) test-cases)]
+    (assoc (assoc individual :errors errors) :total-error (apply + errors))))
 
 (defn regression-error-function
   "Takes an individual and evaluates it on some test cases. For each test case,
@@ -979,7 +1000,7 @@
                                        {:genome (get % :genome)}))
                     population)
           curr-pop (map
-                    #(regression-error-function % :integer fitness)
+                    #(game-error-function % :integer)
                     prog-pop)]
       (report curr-pop generation)
       ;; if it has exceed the number of generations, terminate the prog
@@ -1004,27 +1025,28 @@
 ;;;;;;;;;;
 ;; The main function. Uses some problem-specific functions.
 
-;; (defn -main
-;;   "Runs push-gp, giving it a map of arguments."
-;;   [& args]
-;;   (push-gp {:instructions instructions
-;;             :error-function regression-error-function
-;;             :max-generations 500
-;;             :population-size 200
-;;             :max-initial-program-size 50}))
+(defn -main
+  "Runs push-gp, giving it a map of arguments."
+  [& args]
+  (push-gp {:instructions instructions
+            :error-function game-error-function
+            :max-generations 10
+            :population-size 10
+            :max-initial-program-size 10}))
 
-(defn run-me
-  []
-  (.getResult (SpaceInvaders. (apply list
-                                     `(shot_exists
-				       bool_not
-				       false
-				       ))
-                              100)))
+; (defn run-me
+;   []
+;   (.getResult (SpaceInvaders. (apply list
+;                                      '(shot_exists
+				       
+; 				       true
+; 				       bool_or
+; 				       ))
+;                               100)))
   
 
-(defn -main
-  [& args]
-  (println (repeatedly 1 run-me)))
+; (defn -main
+;   [& args]
+;   (println (repeatedly 1 run-me)))
 
   
