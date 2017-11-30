@@ -1030,23 +1030,8 @@
   [& args]
   (push-gp {:instructions instructions
             :error-function game-error-function
-            :max-generations 10
+            :max-generations 2
             :population-size 10
-            :max-initial-program-size 10}))
-
-; (defn run-me
-;   []
-;   (.getResult (SpaceInvaders. (apply list
-;                                      '(shot_exists
-				       
-; 				       true
-; 				       bool_or
-; 				       ))
-;                               100)))
-  
-
-; (defn -main
-;   [& args]
-;   (println (repeatedly 1 run-me)))
+            :max-initial-program-size 20}))
 
   

@@ -1,6 +1,6 @@
 package push307;
 
-import javax.swing.ImageIcon;
+// import javax.swing.ImageIcon;
 
 public class Shot extends Sprite {
 
@@ -18,8 +18,8 @@ public class Shot extends Sprite {
 
     private void initShot(int x, int y) {
 
-        ImageIcon ii = new ImageIcon(shotImg);
-        setImage(ii.getImage());
+        // ImageIcon ii = new ImageIcon(shotImg);
+        // setImage(ii.getImage());
         
         setX(x + H_SPACE);
         setY(y - V_SPACE);
