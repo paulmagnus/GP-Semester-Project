@@ -29,4 +29,4 @@ push307/Sprite.class: Sprite.java
 	javac $(JFLAGS) Sprite.java
 
 clean:
-	rm *.class
+	rm push307/*.class

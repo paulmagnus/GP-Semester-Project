@@ -2,11 +2,11 @@
   (:require [clojure.string :as string]))
 
 (def instruction-parentheses
-  '{exec_= 2
-    exec_dup 1
-    exec_pop 1
-    exec_if 2
-    exec_do*range 1})
+  '{push307.core/exec_= 2
+    push307.core/exec_dup 1
+    push307.core/exec_pop 1
+    push307.core/exec_if 2
+    push307.core/exec_do*range 1})
 
 (defn lookup-instruction-paren-groups
   [ins]
