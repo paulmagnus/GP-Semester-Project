@@ -33,7 +33,7 @@
    :genome '()
    :total-error 37})
 
-
+;; an example of a genome before translation
 (def genome-example
   {:program '()
   :error []
@@ -155,7 +155,7 @@
   (some #(= :no-stack-item %) vec))
 
 (defn swap-stack
-  "Swaps the top two items of a stack. If stack has <2 items,
+  "Swaps the top two items of a stack. If stack has < 2 items,
   returns :no-stack-item"
   [state stack]
   (let [first-item (peek-stack state stack)
@@ -423,7 +423,10 @@
     (if (not-enough-args [first-exec second-exec bool])
       state
       (if (= false bool)
+        ;; ignore the first item
         (pop-stack state :exec)
+        ;; remove the second item from the exec stack and execute
+        ;; the first item
         (push-to-stack (pop-stack (pop-stack state :exec) :exec)
                        :exec
                        first-exec)))))
@@ -442,13 +445,17 @@
       (if (= dest-indx curr-indx)
         (pop-stack state :integer)
         (let [next-indx (+ curr-indx (if (< dest-indx curr-indx) -1 1))]
+          ; for each iteration, need to push onto the stack, in the order
+          ; they are push:
+          ; 1) exec_do*range, 2) the desination index,
+          ; 3) the current index, 4) the code to be executed
           (push-to-stack
            (push-to-stack
             (push-to-stack
              (push-to-stack
               (pop-stack state :integer)
               :exec
-              'exec_do*range)
+              `exec_do*range)
              :exec
              dest-indx)
             :exec
@@ -808,8 +815,9 @@
 
 
 (defn run-game
-  "This runs a single SpaceInvaders game using Java and the push
-  interpreter"
+  "Runs a game of Space Invaders using the program as the player
+   Uses a specified random seed to ensure the game runs idenitcally
+   across runs with the same seed"
   [prog seed]
   ;; Empty list is a different type than a non-empty list for java.
   ;; If we have an empty list we just give it a non-empty list that
@@ -898,7 +906,8 @@
 (defn game-error-function
   "This calcualtes the error for an individual by running its program
   through 10 test cases of SpaceInvaders and each error is the number of aliens
-  that remain at the end of the game."
+  that remain at the end of the game. so the programs try to minimize error by
+  killing all of the aliens."
   [individual stack]
   (let [program (get individual :program)
         errors (pmap #(run-game program %) test-cases)]
