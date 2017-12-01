@@ -534,11 +534,22 @@ public class Board implements Runnable, Commons {
             pushInterpreter = Clojure.var("push307.core",
                                           "java-push-interpreter");
 
+	    GameState gs = new GameState(this);
+
             
             if (pushProgram != null &&
                 pushInterpreter != null) {
-                push_result = pushInterpreter.invoke(new GameState(this),
-                                                     pushProgram);
+		try {
+		    push_result = pushInterpreter.invoke(gs,
+							 pushProgram);
+		}
+		catch (Exception e) {
+		    System.out.println("Stack trace:");
+		    e.printStackTrace();
+		    System.out.println("Push program:");
+		    System.out.println(pushProgram);
+		    System.exit(1);
+		}
             }
             else {
                 System.out.println("Error");
