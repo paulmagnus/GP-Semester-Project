@@ -217,18 +217,19 @@
     exec_if         ; y
     exec_do*range   ; y
     get_player_x    ; y
+    get_player_y
+    shot_exists
+    get_shot_x
+    get_shot_y
+    get_alien_x
+    get_alien_y
+    get_bomb_x
+    get_bomb_y
+    get_alien_dist
+    get_bomb_dist
+    get_hit_min
+    get_hit_max
     ))
-
-;; input operations
-
-(defn in1
-  "Pushes the input labeled :in1 on the inputs map onto the :exec stack.
-  Can't use make-push-instruction, since :input isn't a stack, but a map."
-  [state]
-  (let [in-val (get (get state :input) :in1)]
-    (if (nil? in-val)
-      state
-      (push-to-stack state :exec (get (get state :input) :in1)))))
 
 
 
@@ -267,19 +268,19 @@
   "Pushes TRUE onto the boolean stack if the top two integers on the integer
   the stack are equal. FALSE otherwise."
   [state]
-  (make-push-instruction state = [:integer :integer] :integer))                      
+  (make-push-instruction state = [:integer :integer] :boolean))
    
 (defn int_<
   "Pushes TRUE onto the BOOLEAN stack if the second item is less than the top item.
   FALSE otherwise."
   [state]
-  (make-push-instruction state < [:integer :integer] :integer))
+  (make-push-instruction state < [:integer :integer] :boolean))
 
 (defn int_>
   "Pushes TRUE onto the BOOLEAN stack if the second item is greater than the top item.
   FALSE otherwise."
   [state]
-  (make-push-instruction state > [:integer :integer] :integer))
+  (make-push-instruction state > [:integer :integer] :boolean))
 
 (defn int_dup
   "Duplicates the top integer on the integer stack."
@@ -317,10 +318,12 @@
   "Takes the top two booleans and leaves the logical and of those two on
   the boolean stack."
   [state]
-  (make-push-instruction state
-                         'and
-                         [:boolean :boolean]
-                         :boolean))
+  (let [bool1 (peek-stack state :boolean)
+        bool2 (peek-stack (pop-stack state :boolean) :boolean)]
+    (if (not-enough-args [bool1 bool2])
+      state
+      (push-to-stack (pop-stack (pop-stack state :boolean) :boolean)
+                     :boolean (and bool1 bool2)))))
 
 (defn bool_dup
   "Duplicates the top boolean on the boolean stack."
@@ -338,17 +341,21 @@
 (defn bool_not
   "Pushes the logical not of the top boolean."
   [state]
-  (make-push-instruction state
-                         'not
-                         [:boolean]
-                         :boolean))
+  (let [bool1 (peek-stack state :boolean)]
+    (if (not-enough-args [bool1])
+      state
+      (push-to-stack (pop-stack state :boolean)
+                     :boolean (not bool1)))))
+  
 (defn bool_or
   "Pushes the logical or of the top two booleans."
   [state]
-  (make-push-instruction state
-                         'or
-                         [:boolean :boolean]
-                         :boolean))
+  (let [bool1 (peek-stack state :boolean)
+        bool2 (peek-stack (pop-stack state :boolean) :boolean)]
+    (if (not-enough-args [bool1 bool2])
+      state
+      (push-to-stack (pop-stack (pop-stack state :boolean) :boolean)
+                     :boolean (or bool1 bool2)))))
 
 (defn bool_pop
   "Pops the top item of the boolean stack"
@@ -401,6 +408,7 @@
   "If the top item of the boolean stack is false, pop the top item of the exec
   stack. If the top item of the "
   [state]
+  ;; (println state)
   (let [first-exec (peek-stack state :exec)
         second-exec (peek-stack (pop-stack state :exec) :exec)
         bool (peek-stack state :boolean)]
@@ -408,8 +416,8 @@
     (if (not-enough-args [first-exec second-exec bool])
       state
       (if (= false bool)
-        (pop-stack state :exec)
-        (push-to-stack (pop-stack (pop-stack state :exec) :exec)
+        (pop-stack (pop-stack state :exec) :boolean)
+        (push-to-stack (pop-stack (pop-stack (pop-stack state :exec) :exec) :boolean)
                        :exec
                        first-exec)))))
 
@@ -418,11 +426,12 @@
   "Loops a piece of code for a number of iterations
   based on the integer stack"
   [state]
+  ;; (println state)
   (let [dest-indx (peek-stack state :integer)
         curr-indx (peek-stack (pop-stack state :integer) :integer)
         loop-code (peek-stack state :exec)]
     ; check if there are enough args
-    (println [dest-indx curr-indx loop-code])
+    ;; (println [dest-indx curr-indx loop-code])
     (if (not-enough-args [dest-indx curr-indx loop-code])
       state
       (if (= dest-indx curr-indx)
@@ -434,7 +443,7 @@
              (push-to-stack
               (pop-stack state :integer)
               :exec
-              'exec_do*range)
+              `exec_do*range)
              :exec
              dest-indx)
             :exec
@@ -443,10 +452,61 @@
            (peek-stack state :exec)))))))
 
 
+(defn get-gamestate-info
+  [state name]
+  (get (get state :input) name))
+
 (defn get_player_x
   [state]
-  (let [x (get (get state :input) :player_x)]
-    (push-to-stack state :int x)))
+  (push-to-stack state :integer (get-gamestate-info state :player_x)))
+
+(defn get_player_y
+  [state]
+  (push-to-stack state :integer (get-gamestate-info state :player_y)))
+
+(defn shot_exists
+  [state]
+  (push-to-stack state :boolean (get-gamestate-info state :shot_exists)))
+
+(defn get_shot_x
+  [state]
+  (push-to-stack state :integer (get-gamestate-info state :shot_x)))
+
+(defn get_shot_y
+  [state]
+  (push-to-stack state :integer (get-gamestate-info state :shot_y)))
+
+(defn get_alien_x
+  [state]
+  (push-to-stack state :integer (nth (get-gamestate-info state :alien_position) 0)))
+
+(defn get_alien_y
+  [state]
+  (push-to-stack state :integer (nth (get-gamestate-info state :alien_position) 1)))
+
+(defn get_bomb_x
+  [state]
+  (push-to-stack state :integer (nth (get-gamestate-info state :bomb_position) 0)))
+
+(defn get_bomb_y
+  [state]
+  (push-to-stack state :integer (nth (get-gamestate-info state :bomb_position) 1)))
+
+(defn get_alien_dist
+  [state]
+  (push-to-stack state :integer (get-gamestate-info state :alien_distance)))
+
+(defn get_bomb_dist
+  [state]
+  (push-to-stack state :integer (get-gamestate-info state :bomb_distance)))
+
+(defn get_hit_min
+  [state]
+  (push-to-stack state :integer (nth (get-gamestate-info state :player_hitbox) 0)))
+
+(defn get_hit_max
+  [state]
+  (push-to-stack state :integer (nth (get-gamestate-info state :player_hitbox) 1)))
 
 ;;;;;;;;;;
 ;; Interpreter
@@ -466,6 +526,7 @@
   or if the next element is a literal, pushes it onto the correct stack.
   Returns the new Push state."
   [push-state]
+  ;; (println push-state)
   (let [top (peek-stack push-state :exec)
         top_type (type top)
         state (pop-stack push-state :exec)]
@@ -500,7 +561,9 @@
 
 (defn bool-to-int
   [b]
-  (if b 1 0))
+  (if (= b :no-stack-item)
+    0
+    (if b 1 0)))
 
 (defn interpret-push-program
   "Runs the given program starting with the stacks in start-state. Continues
@@ -520,23 +583,22 @@
    :shot_exists (.playerShotExists gs)
    :shot_x (nth (vec (.getShotPosition gs)) 0)
    :shot_y (nth (vec (.getShotPosition gs)) 1)
-   :alien_position (map (vec (.getAlienPosition gs)))
-   :bomb_position (map (vec (.getBombPosition gs)))
+   :alien_position (vec (.getAlienPosition gs))
+   :bomb_position (vec (.getBombPosition gs))
    :alien_distance (.distanceToNearestAlien gs)
    :bomb_distance (.distanceToNearestBomb gs)
+   :player_hitbox (vec (.getHitbox gs))
    })
 
 (defn java-push-interpreter
   [gs prog]
-  ;; (println prog
+  ;; (println prog)
   (let [end-state (interpret-push-program
                    prog
                    (push-to-stack empty-push-state :input (gs-to-map gs)))]
     ;; (println end-state)
     ;; (println (peek-stack end-state :string))
     ;; (println (peek-stack end-state :boolean))
-    ;; (println "End state:")
-    ;; (println end-state)
     (java.util.ArrayList. [(direction-command-to-int
                             (peek-stack end-state :string))
                            (bool-to-int (peek-stack end-state :boolean))])))
@@ -854,15 +916,49 @@
 ;;             :population-size 200
 ;;             :max-initial-program-size 50}))
 
-(defn run-me
+;; (defn run-me
+;;   []
+;;   (println (.getResult (SpaceInvaders. (apply list
+;;                                               `(1 2 int_+ true bool_dup get_player_x))
+;;                                        100))))
+
+(defn run-me-now
   []
-  (.getResult (SpaceInvaders. (apply list
-                                     `(1 2 int_+ true bool_dup get_player_x))
-                              100)))
-  
+  (def game (SpaceInvaders. (apply list `(get_player_x
+                                          get_alien_x
+                                          int_-
+                                          4
+                                          int_*
+                                          get_player_y
+                                          get_alien_y
+                                          int_-
+                                          int_<
+                                          exec_if ("Right") ("Left")
+                                          get_hit_min
+                                          get_bomb_x
+                                          int_<
+                                          get_hit_max
+                                          get_bomb_x
+                                          int_>
+                                          bool_and
+                                          get_bomb_y
+                                          get_player_y
+                                          int_-
+                                          get_hit_max
+                                          get_hit_min
+                                          int_-
+                                          int_>
+                                          bool_and
+                                          exec_if ("Right") ()
+                                          true
+                                          )
+                                   ) 50))
+  (.setVisible game true)
+  (println (apply list (.getResult game)))
+  (System/exit 0))
 
 (defn -main
   [& args]
-  (println (repeatedly 1 run-me)))
+  (run-me-now))
 
   

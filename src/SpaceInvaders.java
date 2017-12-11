@@ -25,12 +25,15 @@ public class SpaceInvaders extends JFrame implements Commons {
         // setDefaultCloseOperation(EXIT_ON_CLOSE);
         // setVisible(true);
 
+        // board.run();
+
         setSize(BOARD_WIDTH, BOARD_HEIGHT);
         setLocationRelativeTo(null);
         setResizable(false);
     }
 
-    public int getResult() {
+    public int[] getResult() {
+        board.run();
         return board.getScore();
     }
 

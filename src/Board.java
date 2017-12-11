@@ -31,7 +31,7 @@ import clojure.lang.IFn;
 
 // import javax.swing.WindowEvent;
 
-public class Board extends JPanel implements Runnable, Commons {
+public class Board extends JPanel implements Commons {
 
     private static final long serialVersionUID = 1L;
 
@@ -55,6 +55,8 @@ public class Board extends JPanel implements Runnable, Commons {
     private PersistentList pushProgram;
 
     private Random generator;
+
+    private int rounds = 0;
 
     public class GameState {
         private Board board;
@@ -100,7 +102,8 @@ public class Board extends JPanel implements Runnable, Commons {
                                        aliens.get(i).getX(),
                                        aliens.get(i).getY());
 
-                if(dist < min_distance) {
+                if(dist < min_distance &&
+                   !aliens.get(i).isDying()) {
                     closest_pos = new int[] {aliens.get(i).getX(),
                                              aliens.get(i).getY()};
                     min_distance = dist;
@@ -121,7 +124,8 @@ public class Board extends JPanel implements Runnable, Commons {
                                        aliens.get(i).getX(),
                                        aliens.get(i).getY());
 
-                if (dist < min_distance) {
+                if (dist < min_distance &&
+                    !aliens.get(i).isDying()) {
                     min_distance = dist;
                 }
             }
@@ -195,6 +199,11 @@ public class Board extends JPanel implements Runnable, Commons {
             // return positions;
             return Math.round(min_distance);
         }
+
+        public int[] getHitbox() {
+            return new int[]{getPlayerPosition()[0] - PLAYER_WIDTH,
+                             getPlayerPosition()[0] + PLAYER_WIDTH};
+        }
     }
 
     public Board(PersistentList program, long seed) {
@@ -205,16 +214,14 @@ public class Board extends JPanel implements Runnable, Commons {
 
         pushProgram = program;
 
-        IFn require = Clojure.var("clojure.core", "require");
-        require.invoke(Clojure.read("push307.core"));
+        // IFn require = Clojure.var("clojure.core", "require");
+        // require.invoke(Clojure.read("push307.core"));
         pushInterpreter = Clojure.var("push307.core",
                                            "java-push-interpreter");
-
-        run();
     }
 
-    public int getScore() {
-        return NUMBER_OF_ALIENS_TO_DESTROY - deaths;
+    public int[] getScore() {
+        return new int[]{NUMBER_OF_ALIENS_TO_DESTROY - deaths, -rounds};
     }
 
     private void initBoard() {
@@ -223,7 +230,7 @@ public class Board extends JPanel implements Runnable, Commons {
         setFocusable(true);
         d = new Dimension(BOARD_WIDTH, BOARD_HEIGHT);
         setBackground(Color.black);
-        // setVisible(true);
+        setVisible(true);
 
         gameInit();
         setDoubleBuffered(true);
@@ -521,8 +528,9 @@ public class Board extends JPanel implements Runnable, Commons {
         }
     }
 
-    @Override
     public void run() {
+
+        System.out.println("Start run");
 
         long beforeTime, timeDiff, sleep;
 
@@ -581,24 +589,26 @@ public class Board extends JPanel implements Runnable, Commons {
 
             
             // System.out.println("repaint");
-            // repaint();
+            repaint();
             animationCycle();
 
             // only for when watching the game
-            // timeDiff = System.currentTimeMillis() - beforeTime;
-            // sleep = DELAY - timeDiff;
+            timeDiff = System.currentTimeMillis() - beforeTime;
+            sleep = DELAY - timeDiff;
 
-            // if (sleep < 0) {
-            //     sleep = 2;
-            // }
+            if (sleep < 0) {
+                sleep = 2;
+            }
 
-            // try {
-            //     Thread.sleep(sleep);
-            // } catch (InterruptedException e) {
-            //     System.out.println("interrupted");
-            // }
+            try {
+                Thread.sleep(sleep);
+            } catch (InterruptedException e) {
+                System.out.println("interrupted");
+            }
             
-            // beforeTime = System.currentTimeMillis();
+            beforeTime = System.currentTimeMillis();
+
+            rounds++;
         }
 
         // System.out.println("Done");
