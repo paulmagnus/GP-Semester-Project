@@ -31,8 +31,8 @@ public class SpaceInvaders implements Commons {
         // setResizable(false);
     }
 
-    public int getResult() {
-        return board.getScore();
+    public int[] getResult() {
+        return board.getResult();
     }
 
     // only use this for running without clojure

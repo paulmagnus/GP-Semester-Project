@@ -6,6 +6,10 @@
 (import push307.SpaceInvaders)
 (import push307.Board)
 
+;; This is the list of test inputs for the push program.
+(def test-cases
+  (range 30 80 5))
+
 ;;;;;;;;;;
 ;; Examples
 
@@ -32,6 +36,41 @@
    :errors [8 7 6 5 4 3 2 1 0 1]
    :genome '()
    :total-error 37})
+
+(def my-solution
+  {:program '()
+   :errors []
+   :genome (list {:instruction `get_player_x :silent false :close 0}
+   	     {:instruction `get_alien_x :silent false :close 0}
+	     {:instruction `int_- :silent false :close 0}
+	     {:instruction 4 :silent false :close 0}
+	     {:instruction `int_* :silent false :close 0}
+	     {:instruction `get_player_y :silent false :close 0}
+	     {:instruction `get_alien_y :silent false :close 0}
+	     {:instruction `int_- :silent false :close 0}
+	     {:instruction `int_< :silent false :close 0}
+	     {:instruction `exec_if :silent false :close 0}
+	     {:instruction "Right" :silent false :close 1}
+	     {:instruction "Left" :silent false :close 1}
+	     {:instruction `get_hit_min :silent false :close 0}
+	     {:instruction `get_bomb_x :silent false :close 0}
+	     {:instruction `int_< :silent false :close 0}
+	     {:instruction `get_hit_max :silent false :close 0}
+	     {:instruction `get_bomb_x :silent false :close 0}
+	     {:instruction `int_> :silent false :close 0}
+	     {:instruction `bool_and :silent false :close 0}
+	     {:instruction `get_bomb_y :silent false :close 0}
+	     {:instruction `get_player_y :silent false :close 0}
+	     {:instruction `int_- :silent false :close 0}
+	     {:instruction `get_hit_max :silent false :close 0}
+	     {:instruction `get_hit_min :silent false :close 0}
+	     {:instruction `int_- :silent false :close 0}
+	     {:instruction `int_> :silent false :close 0}
+	     {:instruction `bool_and :silent false :close 0}
+	     {:instruction `exec_if :silent false :close 0}
+	     {:instruction "Right" :silent false :close 2}
+	     {:instruction true :silent false :close 0})
+   :total-errors 0})
 
 
 (def genome-example
@@ -64,55 +103,57 @@
   `(
 
    ;; integer operators
-   int_+
-   int_-
-   int_*
-   int_%
+   ;; int_+
+   ;; int_-
+   ;; int_*
+   ;; int_%
    int_=
    int_<
    int_>
-   int_dup
-   ;int_flush
-   ;int_swap
+   ;; int_dup
+   ;; int_flush
+   ;; int_swap
 
    ;; boolean operators
-   bool_=                           ; logical equivalence
+   ;; bool_=                           ; logical equivalence
    bool_and                         ; logical and
-   bool_dup                         ; duplicate top boolean 
-   ;bool_flush                       ; empty the boolean stack
-   ; `bool_not                         ; logical not
-   bool_or                          ; logical or
-   ;bool_pop                         ; pop top element of boolean stack
-   ;bool_swap                        ; swaps the top two booleans
+   ;; bool_dup                         ; duplicate top boolean 
+   ;; bool_flush                       ; empty the boolean stack
+   ;; bool_not                         ; logical not
+   ;; bool_or                          ; logical or
+   ;; bool_pop                         ; pop top element of boolean stack
+   ;; bool_swap                        ; swaps the top two booleans
 
    ;; exec instructions
    ;; see http://faculty.hampshire.edu/lspector/push3-description.html for
    ;; detailed descriptions
-   ;exec_=
-   exec_dup
-   ;exec_pop
+   ;; exec_=
+   ;; exec_dup
+   ;; exec_pop
    exec_if
-   exec_do*range
+   ;; exec_do*range
    
    ;; literals
-   0
-   1
+   ;; 0
+   ;; 1
    true
    false
    "Left"
    "Right"
 
    get_player_x    ; y
-   get_player_y    ; y
-   shot_exists     ; y
-   get_shot_x      ; y
-   get_shot_y      ; y
+   ;; get_player_y    ; y
+   ;; shot_exists     ; y
+   ;; get_shot_x      ; y
+   ;; get_shot_y      ; y
    get_alien_x     ; y
-   get_alien_y     ; y
+   ;; get_alien_y     ; y
    get_bomb_x      ; y
-   get_bomb_y      ; y
-   get_alien_dist  ; y
-   get_bomb_dist   ; y
+   ;; get_bomb_y      ; y
+   ;; get_alien_dist  ; y
+   ;; get_bomb_dist   ; y
+   get_hit_min
+   get_hit_max
    ))
 
 ;;;;;;;;;;
@@ -206,7 +247,7 @@
 ;; Instructions
 
 (def legal-instructions
-  `(                
+  `(
     int_+           ; y
     int_-           ; y
     int_*           ; y
@@ -218,13 +259,13 @@
     int_flush       ; y
     int_swap        ; y
     bool_=          ; y
-    bool_and        ; y              
-    bool_dup        ; y               
-    bool_flush      ; y               
-    bool_not        ; y              
-    bool_or         ; y               
-    bool_pop        ; y                
-    bool_swap       ; y                
+    bool_and        ; y
+    bool_dup        ; y
+    bool_flush      ; y
+    bool_not        ; y
+    bool_or         ; y
+    bool_pop        ; y
+    bool_swap       ; y
     exec_=          ; y
     exec_dup        ; y
     exec_pop        ; y
@@ -241,6 +282,8 @@
     get_bomb_y      ; y
     get_alien_dist  ; y
     get_bomb_dist   ; y
+    get_hit_min     ; y
+    get_hit_max     ; y
     ))
 
 
@@ -332,10 +375,12 @@
   "Takes the top two booleans and leaves the logical and of those two on
   the boolean stack."
   [state]
-  (make-push-instruction state
-                         'and
-                         [:boolean :boolean]
-                         :boolean))
+  (let [bool1 (peek-stack state :boolean)
+        bool2 (peek-stack (pop-stack state :boolean) :boolean)]
+    (if (not-enough-args [bool1 bool2])
+      state
+      (push-to-stack (pop-stack (pop-stack state :boolean) :boolean)
+                     :boolean (and bool1 bool2)))))
 
 (defn bool_dup
   "Duplicates the top boolean on the boolean stack."
@@ -353,17 +398,23 @@
 (defn bool_not
   "Pushes the logical not of the top boolean."
   [state]
-  (make-push-instruction state
-                         'not
-                         [:boolean]
-                         :boolean))
+  (let [bool1 (peek-stack state :boolean)]
+    (if (not-enough-args [bool1])
+      state
+      (push-to-stack (pop-stack state :boolean)
+                     :boolean (not bool1)))))
+
+
 (defn bool_or
   "Pushes the logical or of the top two booleans."
   [state]
-  (make-push-instruction state
-                         'or
-                         [:boolean :boolean]
-                         :boolean))
+  (let [bool1 (peek-stack state :boolean)
+        bool2 (peek-stack (pop-stack state :boolean) :boolean)]
+    (if (not-enough-args [bool1 bool2])
+      state
+      (push-to-stack (pop-stack (pop-stack state :boolean) :boolean)
+                     :boolean (or bool1 bool2)))))
+
 
 (defn bool_pop
   "Pops the top item of the boolean stack"
@@ -423,8 +474,8 @@
     (if (not-enough-args [first-exec second-exec bool])
       state
       (if (= false bool)
-        (pop-stack state :exec)
-        (push-to-stack (pop-stack (pop-stack state :exec) :exec)
+        (pop-stack (pop-stack state :exec) :boolean)
+        (push-to-stack (pop-stack (pop-stack (pop-stack state :exec) :exec) :boolean)
                        :exec
                        first-exec)))))
 
@@ -448,7 +499,7 @@
              (push-to-stack
               (pop-stack state :integer)
               :exec
-              'exec_do*range)
+              `exec_do*range)
              :exec
              dest-indx)
             :exec
@@ -520,6 +571,14 @@
   [state]
   (push-to-stack state :integer (get-gamestate-info state :bomb_distance)))
 
+(defn get_hit_min
+  [state]
+  (push-to-stack state :integer (nth (get-gamestate-info state :player_hitbox) 0)))
+
+(defn get_hit_max
+  [state]
+  (push-to-stack state :integer (nth (get-gamestate-info state :player_hitbox) 1)))
+
 ;;;;;;;;;;
 ;; Interpreter
 
@@ -542,12 +601,12 @@
         top_type (type top)
         state (pop-stack push-state :exec)]
     ;; determine which stack the top goes into or if it is an instruction
-    ; (println "legal-instructions")
-    ; (println legal-instructions)
-    ; (println "top")
-    ; (println top)
-    ; (println "namespace:")
-    ; (println (namespace top))
+    ;; (println "legal-instructions")
+    ;; (println legal-instructions)
+    ;; (println "top")
+    ;; (println top)
+    ;; (println "namespace:")
+    ;; (println (namespace top))
     (cond
       ;; empty sublist
       (= top_type (type '())) state
@@ -563,7 +622,7 @@
       ;; case for legal instructions
       (some #(= top %) legal-instructions) ((eval top) state)
       ;; illegal instructions return :illegal-instruction
-      :else :illegal-instruction)))
+      :else :illegal-instructon)))
       
 
 (defn direction-command-to-int
@@ -606,6 +665,7 @@
    :bomb_position (vec (.getBombPosition gs))
    :alien_distance (.distanceToNearestAlien gs)
    :bomb_distance (.distanceToNearestBomb gs)
+   :player_hitbox (vec (.getHitbox gs))
    })
 
 (defn java-push-interpreter
@@ -629,15 +689,15 @@
   "This filters the population based on a given case. Used for lexicase selection"
   [population case-number]
   ;; get the minimum error
-  (let [min-error (apply min (map #(nth (get % :errors) case-number) population))]
+  (let [min-error (apply min (map #(nth (flatten (get % :errors)) case-number) population))]
     ;; remove all elements that do not have the same minimum error for that test
-    (filter #(= min-error (nth (get % :errors) case-number)) population)))
+    (filter #(= min-error (nth (flatten (get % :errors)) case-number)) population)))
         
 (defn lexicase-selection
   "This runs random lexicase selection on a population and returns a single individual"
   [population]
   (loop [candidates population
-         cases (shuffle (range 10))]
+         cases (shuffle (range (* 2 (count test-cases))))]
     ;; filter by the first case using filter-by-test-case
     (let [filtered-candidates (filter-by-test-case candidates (first cases))]
       ;; if only one program is left, return that individual
@@ -891,9 +951,6 @@
   [x]
   (+ (* x x x) x 3))
 
-;; This is the list of test inputs for the push program.
-(def test-cases
-  (range 30 80 5))
 
 (defn game-error-function
   "This calcualtes the error for an individual by running its program
@@ -901,13 +958,13 @@
   that remain at the end of the game."
   [individual stack]
   (let [program (get individual :program)
-        errors (pmap #(run-game program %) test-cases)]
+        errors (map #(apply list (run-game program %)) test-cases)]
     ;; This is here since printing does not significantly slow down the system and
     ;; it allows for further evaluation of the system
     (println "\nFinished individual evaluation")
     (println program)
     (println errors)
-    (assoc (assoc individual :errors errors) :total-error (apply + errors))))
+    (assoc (assoc individual :errors errors) :total-error (apply + (map #(first %) errors)))))
 
 (defn push-gp
   "Main GP loop. Initializes the population, and then repeatedly
@@ -931,10 +988,10 @@
            max-initial-program-size]}]
   ;; for the 0th generation, initialize the population
   (loop [generation 0
-         population (initialize-plush-population
+         population (conj (initialize-plush-population
                      population-size
                      instructions
-                     max-initial-program-size)]
+                     max-initial-program-size) my-solution)]
     ;; translate the genomes from the current pop to programs
     ;; then get the errors for the current population
     (let [prog-pop (map
@@ -974,8 +1031,11 @@
   [& args]
   (push-gp {:instructions instructions
             :error-function game-error-function
-            :max-generations 50
-            :population-size 50
-            :max-initial-program-size 100}))
+            :max-generations 100
+            :population-size 100
+            :max-initial-program-size 50}))
 
   
+;; (defn -main
+;;   []
+;;   (println (apply list (.getResult (SpaceInvaders. '(1 2 false) 4)))))

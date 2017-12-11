@@ -56,6 +56,8 @@ public class Board implements Runnable, Commons {
 
     private Random generator;
 
+    private int numRounds = 0;
+
     public class GameState {
         private Board board;
 
@@ -100,7 +102,8 @@ public class Board implements Runnable, Commons {
                                        aliens.get(i).getX(),
                                        aliens.get(i).getY());
 
-                if(dist < min_distance) {
+                if(dist < min_distance &&
+		   !aliens.get(i).isDying()) {
                     closest_pos = new int[] {aliens.get(i).getX(),
                                              aliens.get(i).getY()};
                     min_distance = dist;
@@ -121,7 +124,8 @@ public class Board implements Runnable, Commons {
                                        aliens.get(i).getX(),
                                        aliens.get(i).getY());
 
-                if (dist < min_distance) {
+                if (dist < min_distance &&
+		    !aliens.get(i).isDying()) {
                     min_distance = dist;
                 }
             }
@@ -195,6 +199,11 @@ public class Board implements Runnable, Commons {
             // return positions;
             return Math.round(min_distance);
         }
+
+	public int[] getHitbox() {
+	    return new int[]{getPlayerPosition()[0] - PLAYER_WIDTH,
+			     getPlayerPosition()[1] - PLAYER_WIDTH};
+	}
     }
 
     public Board(PersistentList program, long seed) {
@@ -213,8 +222,8 @@ public class Board implements Runnable, Commons {
         run();
     }
 
-    public int getScore() {
-        return NUMBER_OF_ALIENS_TO_DESTROY - deaths;
+    public int[] getResult() {
+        return new int[]{NUMBER_OF_ALIENS_TO_DESTROY - deaths, -numRounds};
     }
 
     private void initBoard() {
@@ -610,6 +619,8 @@ public class Board implements Runnable, Commons {
             // }
             
             // beforeTime = System.currentTimeMillis();
+
+	    numRounds++;
         }
 
         // System.out.println("Done");
